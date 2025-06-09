@@ -1,5 +1,5 @@
 /* **************************************************************************
- * Copyright (C) 2019-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2019-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,28 +29,28 @@
 
 ROCSOLVER_BEGIN_NAMESPACE
 
-template <typename T, typename TT, typename W>
+template <typename T, typename I, typename TT, typename W>
 rocblas_status rocsolver_gesvd_strided_batched_impl(rocblas_handle handle,
                                                     const rocblas_svect left_svect,
                                                     const rocblas_svect right_svect,
-                                                    const rocblas_int m,
-                                                    const rocblas_int n,
+                                                    const int64_t m,
+                                                    const int64_t n,
                                                     W A,
-                                                    const rocblas_int lda,
+                                                    const int64_t lda,
                                                     const rocblas_stride strideA,
                                                     TT* S,
                                                     const rocblas_stride strideS,
                                                     T* U,
-                                                    const rocblas_int ldu,
+                                                    const int64_t ldu,
                                                     const rocblas_stride strideU,
                                                     T* V,
-                                                    const rocblas_int ldv,
+                                                    const int64_t ldv,
                                                     const rocblas_stride strideV,
                                                     TT* E,
                                                     const rocblas_stride strideE,
                                                     const rocblas_workmode fast_alg,
                                                     rocblas_int* info,
-                                                    const rocblas_int batch_count)
+                                                    const int64_t batch_count)
 {
     ROCSOLVER_ENTER_TOP("gesvd_strided_batched", "--left_svect", left_svect, "--right_svect",
                         right_svect, "-m", m, "-n", n, "--lda", lda, "--strideA", strideA,
@@ -68,7 +68,7 @@ rocblas_status rocsolver_gesvd_strided_batched_impl(rocblas_handle handle,
         return st;
 
     // working with unshifted arrays
-    rocblas_int shiftA = 0;
+    int64_t shiftA = 0;
 
     // memory workspace sizes:
     // size for constants in rocblas calls
@@ -240,6 +240,130 @@ rocblas_status rocsolver_zgesvd_strided_batched(rocblas_handle handle,
     return rocsolver::rocsolver_gesvd_strided_batched_impl<rocblas_double_complex>(
         handle, left_svect, right_svect, m, n, A, lda, strideA, S, strideS, U, ldu, strideU, V, ldv,
         strideV, E, strideE, fast_alg, info, batch_count);
+}
+
+rocblas_status rocsolver_sgesvd_strided_batched_64(rocblas_handle handle,
+                                                   const rocblas_svect left_svect,
+                                                   const rocblas_svect right_svect,
+                                                   const int64_t m,
+                                                   const int64_t n,
+                                                   float* A,
+                                                   const int64_t lda,
+                                                   const rocblas_stride strideA,
+                                                   float* S,
+                                                   const rocblas_stride strideS,
+                                                   float* U,
+                                                   const int64_t ldu,
+                                                   const rocblas_stride strideU,
+                                                   float* V,
+                                                   const int64_t ldv,
+                                                   const rocblas_stride strideV,
+                                                   float* E,
+                                                   const rocblas_stride strideE,
+                                                   const rocblas_workmode fast_alg,
+                                                   rocblas_int* info,
+                                                   const int64_t batch_count)
+{
+#ifdef HAVE_ROCBLAS_64
+    return rocsolver::rocsolver_gesvd_strided_batched_impl<float>(
+        handle, left_svect, right_svect, m, n, A, lda, strideA, S, strideS, U, ldu, strideU, V, ldv,
+        strideV, E, strideE, fast_alg, info, batch_count);
+#else
+    return rocblas_status_not_implemented;
+#endif
+}
+
+rocblas_status rocsolver_dgesvd_strided_batched_64(rocblas_handle handle,
+                                                   const rocblas_svect left_svect,
+                                                   const rocblas_svect right_svect,
+                                                   const int64_t m,
+                                                   const int64_t n,
+                                                   double* A,
+                                                   const int64_t lda,
+                                                   const rocblas_stride strideA,
+                                                   double* S,
+                                                   const rocblas_stride strideS,
+                                                   double* U,
+                                                   const int64_t ldu,
+                                                   const rocblas_stride strideU,
+                                                   double* V,
+                                                   const int64_t ldv,
+                                                   const rocblas_stride strideV,
+                                                   double* E,
+                                                   const rocblas_stride strideE,
+                                                   const rocblas_workmode fast_alg,
+                                                   rocblas_int* info,
+                                                   const int64_t batch_count)
+{
+#ifdef HAVE_ROCBLAS_64
+    return rocsolver::rocsolver_gesvd_strided_batched_impl<double>(
+        handle, left_svect, right_svect, m, n, A, lda, strideA, S, strideS, U, ldu, strideU, V, ldv,
+        strideV, E, strideE, fast_alg, info, batch_count);
+#else
+    return rocblas_status_not_implemented;
+#endif
+}
+
+rocblas_status rocsolver_cgesvd_strided_batched_64(rocblas_handle handle,
+                                                   const rocblas_svect left_svect,
+                                                   const rocblas_svect right_svect,
+                                                   const int64_t m,
+                                                   const int64_t n,
+                                                   rocblas_float_complex* A,
+                                                   const int64_t lda,
+                                                   const rocblas_stride strideA,
+                                                   float* S,
+                                                   const rocblas_stride strideS,
+                                                   rocblas_float_complex* U,
+                                                   const int64_t ldu,
+                                                   const rocblas_stride strideU,
+                                                   rocblas_float_complex* V,
+                                                   const int64_t ldv,
+                                                   const rocblas_stride strideV,
+                                                   float* E,
+                                                   const rocblas_stride strideE,
+                                                   const rocblas_workmode fast_alg,
+                                                   rocblas_int* info,
+                                                   const int64_t batch_count)
+{
+#ifdef HAVE_ROCBLAS_64
+    return rocsolver::rocsolver_gesvd_strided_batched_impl<rocblas_float_complex>(
+        handle, left_svect, right_svect, m, n, A, lda, strideA, S, strideS, U, ldu, strideU, V, ldv,
+        strideV, E, strideE, fast_alg, info, batch_count);
+#else
+    return rocblas_status_not_implemented;
+#endif
+}
+
+rocblas_status rocsolver_zgesvd_strided_batched_64(rocblas_handle handle,
+                                                   const rocblas_svect left_svect,
+                                                   const rocblas_svect right_svect,
+                                                   const int64_t m,
+                                                   const int64_t n,
+                                                   rocblas_double_complex* A,
+                                                   const int64_t lda,
+                                                   const rocblas_stride strideA,
+                                                   double* S,
+                                                   const rocblas_stride strideS,
+                                                   rocblas_double_complex* U,
+                                                   const int64_t ldu,
+                                                   const rocblas_stride strideU,
+                                                   rocblas_double_complex* V,
+                                                   const int64_t ldv,
+                                                   const rocblas_stride strideV,
+                                                   double* E,
+                                                   const rocblas_stride strideE,
+                                                   const rocblas_workmode fast_alg,
+                                                   rocblas_int* info,
+                                                   const int64_t batch_count)
+{
+#ifdef HAVE_ROCBLAS_64
+    return rocsolver::rocsolver_gesvd_strided_batched_impl<rocblas_double_complex>(
+        handle, left_svect, right_svect, m, n, A, lda, strideA, S, strideS, U, ldu, strideU, V, ldv,
+        strideV, E, strideE, fast_alg, info, batch_count);
+#else
+    return rocblas_status_not_implemented;
+#endif
 }
 
 } // extern C
