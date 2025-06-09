@@ -4,7 +4,7 @@
  *     Univ. of Tennessee, Univ. of California Berkeley,
  *     Univ. of Colorado Denver and NAG Ltd..
  *     April 2012
- * Copyright (C) 2020-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2020-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -105,22 +105,22 @@ void local_geqrlq_template(rocblas_handle handle,
 }
 
 /** Argument checking **/
-template <typename T, typename TT, typename W>
+template <typename T, typename I, typename TT, typename W>
 rocblas_status rocsolver_gesvd_argCheck(rocblas_handle handle,
                                         const rocblas_svect left_svect,
                                         const rocblas_svect right_svect,
-                                        const rocblas_int m,
-                                        const rocblas_int n,
+                                        const I m,
+                                        const I n,
                                         W A,
-                                        const rocblas_int lda,
+                                        const I lda,
                                         TT* S,
                                         T* U,
-                                        const rocblas_int ldu,
+                                        const I ldu,
                                         T* V,
-                                        const rocblas_int ldv,
+                                        const I ldv,
                                         TT* E,
                                         rocblas_int* info,
-                                        const rocblas_int batch_count = 1)
+                                        const I batch_count = 1)
 {
     // order is important for unit tests:
 
@@ -162,9 +162,9 @@ rocblas_status rocsolver_gesvd_argCheck(rocblas_handle handle,
 template <bool BATCHED, typename T, typename S>
 void rocsolver_gesvd_getMemorySize(const rocblas_svect left_svect,
                                    const rocblas_svect right_svect,
-                                   const rocblas_int m,
-                                   const rocblas_int n,
-                                   const rocblas_int batch_count,
+                                   const I m,
+                                   const I n,
+                                   const I batch_count,
                                    const rocblas_workmode fast_alg,
                                    size_t* size_scalars,
                                    size_t* size_work_workArr,
@@ -219,14 +219,14 @@ void rocsolver_gesvd_getMemorySize(const rocblas_svect left_svect,
     const bool fast_thinSVD = (thinSVD && fast_alg == rocblas_outofplace);
 
     // auxiliary sizes and variables
-    const rocblas_int k = std::min(m, n);
-    const rocblas_int kk = std::max(m, n);
-    const rocblas_int nu = leftvN ? 0 : ((fast_thinSVD || (thinSVD && leadvN)) ? k : m);
-    const rocblas_int nv = rightvN ? 0 : ((fast_thinSVD || (thinSVD && leadvN)) ? k : n);
+    const I k = std::min(m, n);
+    const I kk = std::max(m, n);
+    const I nu = leftvN ? 0 : ((fast_thinSVD || (thinSVD && leadvN)) ? k : m);
+    const I nv = rightvN ? 0 : ((fast_thinSVD || (thinSVD && leadvN)) ? k : n);
     const rocblas_storev storev_lead = row ? rocblas_column_wise : rocblas_row_wise;
     const rocblas_storev storev_other = row ? rocblas_row_wise : rocblas_column_wise;
     const rocblas_side side = row ? rocblas_side_right : rocblas_side_left;
-    rocblas_int mn;
+    I mn;
 
     // size of array of pointers to workspace
     if(BATCHED)
@@ -330,29 +330,29 @@ void rocsolver_gesvd_getMemorySize(const rocblas_svect left_svect,
     *size_diag_tmptr_Y = *std::max_element(std::begin(y), std::end(y));
 }
 
-template <bool BATCHED, bool STRIDED, typename T, typename TT, typename W>
+template <bool BATCHED, bool STRIDED, typename T, typename I, typename TT, typename W>
 rocblas_status rocsolver_gesvd_template(rocblas_handle handle,
                                         const rocblas_svect left_svect,
                                         const rocblas_svect right_svect,
-                                        const rocblas_int m,
-                                        const rocblas_int n,
+                                        const I m,
+                                        const I n,
                                         W A,
-                                        const rocblas_int shiftA,
-                                        const rocblas_int lda,
+                                        const I shiftA,
+                                        const I lda,
                                         const rocblas_stride strideA,
                                         TT* S,
                                         const rocblas_stride strideS,
                                         T* U,
-                                        const rocblas_int ldu,
+                                        const I ldu,
                                         const rocblas_stride strideU,
                                         T* V,
-                                        const rocblas_int ldv,
+                                        const I ldv,
                                         const rocblas_stride strideV,
                                         TT* E,
                                         const rocblas_stride strideE,
                                         const rocblas_workmode fast_alg,
                                         rocblas_int* info,
-                                        const rocblas_int batch_count,
+                                        const I batch_count,
                                         T* scalars,
                                         void* work_workArr,
                                         T* Abyx_norms_tmptr_cmplt,
@@ -407,29 +407,29 @@ rocblas_status rocsolver_gesvd_template(rocblas_handle handle,
     const bool fast_thinSVD = (thinSVD && fast_alg == rocblas_outofplace);
 
     // auxiliary sizes and variables
-    const rocblas_int k = std::min(m, n);
-    const rocblas_int kk = std::max(m, n);
-    const rocblas_int shiftX = 0;
-    const rocblas_int shiftY = 0;
-    const rocblas_int shiftUV = 0;
-    const rocblas_int shiftT = 0;
-    const rocblas_int shiftC = 0;
-    const rocblas_int shiftU = 0;
-    const rocblas_int shiftV = 0;
-    const rocblas_int ldx = thinSVD ? k : m;
-    const rocblas_int ldy = thinSVD ? k : n;
+    const I k = std::min(m, n);
+    const I kk = std::max(m, n);
+    const I shiftX = 0;
+    const I shiftY = 0;
+    const I shiftUV = 0;
+    const I shiftT = 0;
+    const I shiftC = 0;
+    const I shiftU = 0;
+    const I shiftV = 0;
+    const I ldx = thinSVD ? k : m;
+    const I ldy = thinSVD ? k : n;
     const rocblas_stride strideX = ldx * GEBRD_GEBD2_SWITCHSIZE;
     const rocblas_stride strideY = ldy * GEBRD_GEBD2_SWITCHSIZE;
     T* bufferT = tempArrayT;
-    rocblas_int ldt = k;
+    I ldt = k;
     rocblas_stride strideT = k * k;
     T* bufferC = tempArrayC;
-    rocblas_int ldc = m;
+    I ldc = m;
     rocblas_stride strideC = m * n;
 
     T* UV;
-    rocblas_int lduv, mn, nu, nv;
-    rocblas_int offset_other, offset_lead;
+    I lduv, mn, nu, nv;
+    I offset_other, offset_lead;
     rocblas_storev storev_other, storev_lead;
     rocblas_stride strideUV;
     rocblas_fill uplo;
@@ -491,9 +491,9 @@ rocblas_status rocsolver_gesvd_template(rocblas_handle handle,
 
     // common block sizes and number of threads for internal kernels
     constexpr rocblas_int thread_count = 32;
-    const rocblas_int blocks_m = (m - 1) / thread_count + 1;
-    const rocblas_int blocks_n = (n - 1) / thread_count + 1;
-    const rocblas_int blocks_k = (k - 1) / thread_count + 1;
+    const I blocks_m = (m - 1) / thread_count + 1;
+    const I blocks_n = (n - 1) / thread_count + 1;
+    const I blocks_k = (k - 1) / thread_count + 1;
 
     /** A thin SVD could be computed for matrices with sufficiently more rows than
         columns (or columns than rows) by starting with a QR factorization (or LQ

@@ -4060,6 +4060,126 @@ inline rocblas_status rocsolver_gesvd(bool STRIDED,
         : rocsolver_zgesvd(handle, leftv, rightv, m, n, A, lda, S, U, ldu, V, ldv, E, fast_alg, info);
 }
 
+inline rocblas_status rocsolver_gesvd(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_svect leftv,
+                                      rocblas_svect rightv,
+                                      int64_t m,
+                                      int64_t n,
+                                      float* A,
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      float* S,
+                                      rocblas_stride stS,
+                                      float* U,
+                                      int64_t ldu,
+                                      rocblas_stride stU,
+                                      float* V,
+                                      int64_t ldv,
+                                      rocblas_stride stV,
+                                      float* E,
+                                      rocblas_stride stE,
+                                      rocblas_workmode fast_alg,
+                                      rocblas_int* info,
+                                      int64_t bc)
+{
+    return STRIDED
+        ? rocsolver_sgesvd_strided_batched_64(handle, leftv, rightv, m, n, A, lda, stA, S, stS, U,
+                                              ldu, stU, V, ldv, stV, E, stE, fast_alg, info, bc)
+        : rocsolver_sgesvd_64(handle, leftv, rightv, m, n, A, lda, S, U, ldu, V, ldv, E, fast_alg,
+                              info);
+}
+
+inline rocblas_status rocsolver_gesvd(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_svect leftv,
+                                      rocblas_svect rightv,
+                                      int64_t m,
+                                      int64_t n,
+                                      double* A,
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      double* S,
+                                      rocblas_stride stS,
+                                      double* U,
+                                      int64_t ldu,
+                                      rocblas_stride stU,
+                                      double* V,
+                                      int64_t ldv,
+                                      rocblas_stride stV,
+                                      double* E,
+                                      rocblas_stride stE,
+                                      rocblas_workmode fast_alg,
+                                      rocblas_int* info,
+                                      int64_t bc)
+{
+    return STRIDED
+        ? rocsolver_dgesvd_strided_batched_64(handle, leftv, rightv, m, n, A, lda, stA, S, stS, U,
+                                              ldu, stU, V, ldv, stV, E, stE, fast_alg, info, bc)
+        : rocsolver_dgesvd_64(handle, leftv, rightv, m, n, A, lda, S, U, ldu, V, ldv, E, fast_alg,
+                              info);
+}
+
+inline rocblas_status rocsolver_gesvd(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_svect leftv,
+                                      rocblas_svect rightv,
+                                      int64_t m,
+                                      int64_t n,
+                                      rocblas_float_complex* A,
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      float* S,
+                                      rocblas_stride stS,
+                                      rocblas_float_complex* U,
+                                      int64_t ldu,
+                                      rocblas_stride stU,
+                                      rocblas_float_complex* V,
+                                      int64_t ldv,
+                                      rocblas_stride stV,
+                                      float* E,
+                                      rocblas_stride stE,
+                                      rocblas_workmode fast_alg,
+                                      rocblas_int* info,
+                                      int64_t bc)
+{
+    return STRIDED
+        ? rocsolver_cgesvd_strided_batched_64(handle, leftv, rightv, m, n, A, lda, stA, S, stS, U,
+                                              ldu, stU, V, ldv, stV, E, stE, fast_alg, info, bc)
+        : rocsolver_cgesvd_64(handle, leftv, rightv, m, n, A, lda, S, U, ldu, V, ldv, E, fast_alg,
+                              info);
+}
+
+inline rocblas_status rocsolver_gesvd(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_svect leftv,
+                                      rocblas_svect rightv,
+                                      int64_t m,
+                                      int64_t n,
+                                      rocblas_double_complex* A,
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      double* S,
+                                      rocblas_stride stS,
+                                      rocblas_double_complex* U,
+                                      int64_t ldu,
+                                      rocblas_stride stU,
+                                      rocblas_double_complex* V,
+                                      int64_t ldv,
+                                      rocblas_stride stV,
+                                      double* E,
+                                      rocblas_stride stE,
+                                      rocblas_workmode fast_alg,
+                                      rocblas_int* info,
+                                      int64_t bc)
+{
+    return STRIDED
+        ? rocsolver_zgesvd_strided_batched_64(handle, leftv, rightv, m, n, A, lda, stA, S, stS, U,
+                                              ldu, stU, V, ldv, stV, E, stE, fast_alg, info, bc)
+        : rocsolver_zgesvd_64(handle, leftv, rightv, m, n, A, lda, S, U, ldu, V, ldv, E, fast_alg,
+                              info);
+}
+
 // batched
 inline rocblas_status rocsolver_gesvd(bool STRIDED,
                                       rocblas_handle handle,
@@ -4167,6 +4287,114 @@ inline rocblas_status rocsolver_gesvd(bool STRIDED,
 {
     return rocsolver_zgesvd_batched(handle, leftv, rightv, m, n, A, lda, S, stS, U, ldu, stU, V,
                                     ldv, stV, E, stE, fast_alg, info, bc);
+}
+
+inline rocblas_status rocsolver_gesvd(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_svect leftv,
+                                      rocblas_svect rightv,
+                                      int64_t m,
+                                      int64_t n,
+                                      float* const A[],
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      float* S,
+                                      rocblas_stride stS,
+                                      float* U,
+                                      int64_t ldu,
+                                      rocblas_stride stU,
+                                      float* V,
+                                      int64_t ldv,
+                                      rocblas_stride stV,
+                                      float* E,
+                                      rocblas_stride stE,
+                                      rocblas_workmode fast_alg,
+                                      rocblas_int* info,
+                                      int64_t bc)
+{
+    return rocsolver_sgesvd_batched_64(handle, leftv, rightv, m, n, A, lda, S, stS, U, ldu, stU, V,
+                                       ldv, stV, E, stE, fast_alg, info, bc);
+}
+
+inline rocblas_status rocsolver_gesvd(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_svect leftv,
+                                      rocblas_svect rightv,
+                                      int64_t m,
+                                      int64_t n,
+                                      double* const A[],
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      double* S,
+                                      rocblas_stride stS,
+                                      double* U,
+                                      int64_t ldu,
+                                      rocblas_stride stU,
+                                      double* V,
+                                      int64_t ldv,
+                                      rocblas_stride stV,
+                                      double* E,
+                                      rocblas_stride stE,
+                                      rocblas_workmode fast_alg,
+                                      rocblas_int* info,
+                                      int64_t bc)
+{
+    return rocsolver_dgesvd_batched_64(handle, leftv, rightv, m, n, A, lda, S, stS, U, ldu, stU, V,
+                                       ldv, stV, E, stE, fast_alg, info, bc);
+}
+
+inline rocblas_status rocsolver_gesvd(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_svect leftv,
+                                      rocblas_svect rightv,
+                                      int64_t m,
+                                      int64_t n,
+                                      rocblas_float_complex* const A[],
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      float* S,
+                                      rocblas_stride stS,
+                                      rocblas_float_complex* U,
+                                      int64_t ldu,
+                                      rocblas_stride stU,
+                                      rocblas_float_complex* V,
+                                      int64_t ldv,
+                                      rocblas_stride stV,
+                                      float* E,
+                                      rocblas_stride stE,
+                                      rocblas_workmode fast_alg,
+                                      rocblas_int* info,
+                                      int64_t bc)
+{
+    return rocsolver_cgesvd_batched_64(handle, leftv, rightv, m, n, A, lda, S, stS, U, ldu, stU, V,
+                                       ldv, stV, E, stE, fast_alg, info, bc);
+}
+
+inline rocblas_status rocsolver_gesvd(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_svect leftv,
+                                      rocblas_svect rightv,
+                                      int64_t m,
+                                      int64_t n,
+                                      rocblas_double_complex* const A[],
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      double* S,
+                                      rocblas_stride stS,
+                                      rocblas_double_complex* U,
+                                      int64_t ldu,
+                                      rocblas_stride stU,
+                                      rocblas_double_complex* V,
+                                      int64_t ldv,
+                                      rocblas_stride stV,
+                                      double* E,
+                                      rocblas_stride stE,
+                                      rocblas_workmode fast_alg,
+                                      rocblas_int* info,
+                                      int64_t bc)
+{
+    return rocsolver_zgesvd_batched_64(handle, leftv, rightv, m, n, A, lda, S, stS, U, ldu, stU, V,
+                                       ldv, stV, E, stE, fast_alg, info, bc);
 }
 /********************************************************/
 

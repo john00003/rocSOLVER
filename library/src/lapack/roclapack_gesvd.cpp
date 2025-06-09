@@ -1,5 +1,5 @@
 /* **************************************************************************
- * Copyright (C) 2019-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2019-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -211,6 +211,102 @@ rocblas_status rocsolver_zgesvd(rocblas_handle handle,
 {
     return rocsolver::rocsolver_gesvd_impl<rocblas_double_complex>(
         handle, left_svect, right_svect, m, n, A, lda, S, U, ldu, V, ldv, E, fast_alg, info);
+}
+
+rocblas_status rocsolver_sgesvd_64(rocblas_handle handle,
+                                   const rocblas_svect left_svect,
+                                   const rocblas_svect right_svect,
+                                   const int64_t m,
+                                   const int64_t n,
+                                   float* A,
+                                   const int64_t lda,
+                                   float* S,
+                                   float* U,
+                                   const int64_t ldu,
+                                   float* V,
+                                   const int64_t ldv,
+                                   float* E,
+                                   const rocblas_workmode fast_alg,
+                                   rocblas_int* info)
+{
+#ifdef HAVE_ROCBLAS_64
+    return rocsolver::rocsolver_gesvd_impl<float>(handle, left_svect, right_svect, m, n, A, lda, S,
+                                                  U, ldu, V, ldv, E, fast_alg, info);
+#else
+    return rocblas_status_not_implemented;
+#endif
+}
+
+rocblas_status rocsolver_dgesvd_64(rocblas_handle handle,
+                                   const rocblas_svect left_svect,
+                                   const rocblas_svect right_svect,
+                                   const int64_t m,
+                                   const int64_t n,
+                                   double* A,
+                                   const int64_t lda,
+                                   double* S,
+                                   double* U,
+                                   const int64_t ldu,
+                                   double* V,
+                                   const int64_t ldv,
+                                   double* E,
+                                   const rocblas_workmode fast_alg,
+                                   rocblas_int* info)
+{
+#ifdef HAVE_ROCBLAS_64
+    return rocsolver::rocsolver_gesvd_impl<double>(handle, left_svect, right_svect, m, n, A, lda, S,
+                                                   U, ldu, V, ldv, E, fast_alg, info);
+#else
+    return rocblas_status_not_implemented;
+#endif
+}
+
+rocblas_status rocsolver_cgesvd_64(rocblas_handle handle,
+                                   const rocblas_svect left_svect,
+                                   const rocblas_svect right_svect,
+                                   const int64_t m,
+                                   const int64_t n,
+                                   rocblas_float_complex* A,
+                                   const int64_t lda,
+                                   float* S,
+                                   rocblas_float_complex* U,
+                                   const int64_t ldu,
+                                   rocblas_float_complex* V,
+                                   const int64_t ldv,
+                                   float* E,
+                                   const rocblas_workmode fast_alg,
+                                   rocblas_int* info)
+{
+#ifdef HAVE_ROCBLAS_64
+    return rocsolver::rocsolver_gesvd_impl<rocblas_float_complex>(
+        handle, left_svect, right_svect, m, n, A, lda, S, U, ldu, V, ldv, E, fast_alg, info);
+#else
+    return rocblas_status_not_implemented;
+#endif
+}
+
+rocblas_status rocsolver_zgesvd_64(rocblas_handle handle,
+                                   const rocblas_svect left_svect,
+                                   const rocblas_svect right_svect,
+                                   const int64_t m,
+                                   const int64_t n,
+                                   rocblas_double_complex* A,
+                                   const int64_t lda,
+                                   double* S,
+                                   rocblas_double_complex* U,
+                                   const int64_t ldu,
+                                   rocblas_double_complex* V,
+                                   const int64_t ldv,
+                                   double* E,
+                                   const rocblas_workmode fast_alg,
+                                   rocblas_int* info)
+{
+#ifdef HAVE_ROCBLAS_64
+    return rocsolver::rocsolver_gesvd_impl<rocblas_double_complex>(
+        handle, left_svect, right_svect, m, n, A, lda, S, U, ldu, V, ldv, E, fast_alg, info);
+#else
+    return rocblas_status_not_implemented;
+#endif
 }
 
 } // extern C
