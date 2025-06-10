@@ -194,22 +194,47 @@ template <typename T, typename I>
 __device__ void
     sb2st_larf_left(const I tid, const I tid_inc, I m, I n, T* v, T tau, T* C, I ldc, T* work)
 {
-    // gemv
+    if(tau == 0)
+        return;
+    // assuming work is shared memory and there is enough space to load the entire matrix C
+    // load into shared memory coalesced
     for(I i = tid; i < n; i += tid_inc)
     {
-        work[i] = 0;
         for(I j = 0; j < m; j++)
-            work[i] += conj(C[j + i * ldc]) * v[j];
+        {
+            work[j + i * m] = conj(C[j + i * ldc]);
+        }
     }
 
-    __syncthreads();
+    // scale each element by v[j]
+    for(I j = tid; j < m; j += tid_inc)
+    {
+        scale = v[j];
+        for(I i = 0; i < n; i++)
+        {
+            work[j + i * m] *= scale;
+        }
+    }
+
+    // reduction
+    for(I k = 0; k < n; k++)
+    {
+        for(I j = m / 2; j > 0; j /= 2)
+        {
+            for(I i = tid; i < j; i += tid_inc)
+            {
+                work[k * m + i] += work[i + k * m + j];
+            }
+            __syncthreads();
+        }
+    }
 
     // ger
     for(rocblas_int idx1d = tid; idx1d < m * n; idx1d += tid_inc)
     {
         rocblas_int i = idx1d % m;
         rocblas_int j = idx1d / m;
-        C[i + j * ldc] -= tau * v[i] * conj(work[j]);
+        C[i + j * ldc] -= tau * v[i] * conj(work[j * m]);
     }
 }
 
@@ -217,6 +242,8 @@ template <typename T, typename I>
 __device__ void
     sb2st_larf_right(const I tid, const I tid_inc, I m, I n, T* v, T tau, T* C, I ldc, T* work)
 {
+    if(tau == 0)
+        return;
     // gemv
     for(I i = tid; i < m; i += tid_inc)
     {
@@ -584,7 +611,7 @@ rocblas_status rocsolver_sb2st_hb2st_template(rocblas_handle handle,
 
     size_t lmemsize_housev = sizeof(T) * nb;
     size_t lmemsize_larfg = sizeof(T) * SB2ST_HB2ST_MAX_THDS;
-    size_t lmemsize_larf = sizeof(T) * strideW;
+    size_t lmemsize_larf = sizeof(T) * nb * n;
     size_t lmemsize = lmemsize_housev + std::max(lmemsize_larfg, lmemsize_larf);
 
     if(lmemsize > props.sharedMemPerBlock)
