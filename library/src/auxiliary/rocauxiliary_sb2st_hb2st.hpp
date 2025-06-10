@@ -180,46 +180,59 @@ __device__ void
 {
     if(tau == 0)
         return;
-
-    if(side == rocblas_side_left)
+    if(side == rocblas_left)
     {
-        // gemv
-        for(I i = tid; i < n; i += tid_inc)
-        {
-            work[i] = 0;
-            for(I j = 0; j < m; j++)
-                work[i] += conj(C[j + i * ldc]) * v[j];
-        }
-
-        __syncthreads();
-
-        // ger
-        for(rocblas_int idx1d = tid; idx1d < m * n; idx1d += tid_inc)
-        {
-            rocblas_int i = idx1d % m;
-            rocblas_int j = idx1d / m;
-            C[i + j * ldc] -= tau * v[i] * conj(work[j]);
-        }
+        sb2st_larf_left(tid, tid_inc, m, n, v, tau, C, ldc, work);
     }
     else
     {
-        // gemv
-        for(I i = tid; i < m; i += tid_inc)
-        {
-            work[i] = 0;
-            for(I j = 0; j < n; j++)
-                work[i] += C[i + j * ldc] * v[j];
-        }
+        sb2st_larf_right(tid, tid_inc, m, n, v, tau, C, ldc, work);
+    }
+}
 
-        __syncthreads();
+template <typename T, typename I>
+__device__ void
+    sb2st_larf_left(const I tid, const I tid_inc, I m, I n, T* v, T tau, T* C, I ldc, T* work)
+{
+    // gemv
+    for(I i = tid; i < n; i += tid_inc)
+    {
+        work[i] = 0;
+        for(I j = 0; j < m; j++)
+            work[i] += conj(C[j + i * ldc]) * v[j];
+    }
 
-        // ger
-        for(rocblas_int idx1d = tid; idx1d < m * n; idx1d += tid_inc)
-        {
-            rocblas_int i = idx1d % m;
-            rocblas_int j = idx1d / m;
-            C[i + j * ldc] -= tau * conj(v[j]) * work[i];
-        }
+    __syncthreads();
+
+    // ger
+    for(rocblas_int idx1d = tid; idx1d < m * n; idx1d += tid_inc)
+    {
+        rocblas_int i = idx1d % m;
+        rocblas_int j = idx1d / m;
+        C[i + j * ldc] -= tau * v[i] * conj(work[j]);
+    }
+}
+
+template <typename T, typename I>
+__device__ void
+    sb2st_larf_right(const I tid, const I tid_inc, I m, I n, T* v, T tau, T* C, I ldc, T* work)
+{
+    // gemv
+    for(I i = tid; i < m; i += tid_inc)
+    {
+        work[i] = 0;
+        for(I j = 0; j < n; j++)
+            work[i] += C[i + j * ldc] * v[j];
+    }
+
+    __syncthreads();
+
+    // ger
+    for(rocblas_int idx1d = tid; idx1d < m * n; idx1d += tid_inc)
+    {
+        rocblas_int i = idx1d % m;
+        rocblas_int j = idx1d / m;
+        C[i + j * ldc] -= tau * conj(v[j]) * work[i];
     }
 }
 
