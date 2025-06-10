@@ -282,11 +282,9 @@ __device__ void sb2st_hb2st_sweep_step(const rocblas_int tid,
 
         // apply Householder reflector
         rocblas_int nn = su_e - sm_i;
-        sb2st_larf(tid, MAX_THDS, rocblas_side_left, mm, nn, housev, conj(tau),
-                   A + sm_i + sm_i * lda, lda, work);
+        sb2st_larf_left(tid, MAX_THDS, mm, nn, housev, conj(tau), A + sm_i + sm_i * lda, lda, work);
         __syncthreads();
-        sb2st_larf(tid, MAX_THDS, rocblas_side_right, mm, mm, housev, tau, A + sm_i + sm_i * lda,
-                   lda, work);
+        sb2st_larf_right(tid, MAX_THDS, mm, mm, housev, tau, A + sm_i + sm_i * lda, lda, work);
 
         // copy transpose blocks
         nn = su_e - su_i;
@@ -333,11 +331,10 @@ __device__ void sb2st_hb2st_sweep_step(const rocblas_int tid,
 
         // apply Householder reflector
         rocblas_int nn = su_e - sd_i - 1;
-        sb2st_larf(tid, MAX_THDS, rocblas_side_left, mm, nn, housev, conj(tau),
-                   A + sm_i + (sd_i + 1) * lda, lda, work);
+        sb2st_larf_left(tid, MAX_THDS, mm, nn, housev, conj(tau), A + sm_i + (sd_i + 1) * lda, lda,
+                        work);
         __syncthreads();
-        sb2st_larf(tid, MAX_THDS, rocblas_side_right, mm, mm, housev, tau, A + sm_i + sm_i * lda,
-                   lda, work);
+        sb2st_larf_right(tid, MAX_THDS, mm, mm, housev, tau, A + sm_i + sm_i * lda, lda, work);
 
         // copy transpose blocks
         nn = su_e - su_i;
