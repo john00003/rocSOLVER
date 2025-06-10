@@ -831,7 +831,7 @@ protected:
     ///
     /// `cgc<T>` wraps calloc() and free() for RAII memory management in C++ code.
     ///
-    /// /* template <typename T> */
+    /// /* template typename T> */
     class cgc
     {
     public:
