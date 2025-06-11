@@ -180,7 +180,7 @@ __device__ void
 {
     if(tau == 0)
         return;
-    if(side == rocblas_left)
+    if(side == rocblas_side_left)
     {
         sb2st_larf_left(tid, tid_inc, m, n, v, tau, C, ldc, work);
     }
@@ -209,7 +209,7 @@ __device__ void
     // scale each element by v[j]
     for(I j = tid; j < m; j += tid_inc)
     {
-        scale = v[j];
+        T scale = v[j];
         for(I i = 0; i < n; i++)
         {
             work[j + i * m] *= scale;
