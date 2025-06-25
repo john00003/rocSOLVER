@@ -621,22 +621,16 @@ try
             "                           Indicates if a matrix should be transposed.\n"
             "                           ")
 
-        ("transA",
-         value<char>()->default_value('N'),
-            "N = no transpose, T = transpose, C = conjugate transpose.\n"
-            "                           Indicates if matrix A should be transposed.\n"
-            "                           ")
-
-        ("transB",
-         value<char>()->default_value('N'),
-            "N = no transpose, T = transpose, C = conjugate transpose.\n"
-            "                           Indicates if matrix B should be transposed.\n"
-            "                           ")
-
         ("uplo",
          value<char>()->default_value('U'),
             "U = upper, L = lower.\n"
             "                           Indicates where the data for a triangular or symmetric/hermitian matrix is stored.\n"
+            "                           ")
+
+        ("disable_logging",
+         value<rocblas_int>(&argus.disable_logging)->default_value(0),
+            "Disable rocSOLVER internal logging? 0 = No, 1 = Yes. \n"
+            "                           Disabling logging may be useful if using an external profiling tool such as rocprof-systems.\n"
             "                           ");
 
     // clang-format on
@@ -689,15 +683,21 @@ try
     argus.validate_itype("itype");
     argus.validate_rfinfo_mode("rfinfo_mode");
 
-    // prepare logging infrastructure and ignore environment variables
-    rocsolver_log_begin();
-    rocsolver_log_set_layer_mode(rocblas_layer_mode_none);
+    // only enable logging if specified
+    if(argus.disable_logging == 0)
+    {
+        rocsolver_log_begin();
+        rocsolver_log_set_layer_mode(rocblas_layer_mode_none);
+    }
 
     // select and dispatch function test/benchmark
     rocsolver_dispatcher::invoke(function, precision, argus);
 
-    // terminate logging
-    rocsolver_log_end();
+    // terminate logging if timing was not disabled
+    if(argus.disable_logging == 0)
+    {
+        rocsolver_log_end();
+    }
 
     return 0;
 }

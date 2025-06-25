@@ -1,5 +1,5 @@
 /* **************************************************************************
- * Copyright (C) 2018-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2018-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -60,6 +60,7 @@ public:
     rocblas_int profile = 0;
     rocblas_int profile_kernels = 0;
     rocblas_int batch_count = 1;
+    rocblas_int disable_logging = 0;
 
     // get and set function arguments
     template <typename T>
@@ -122,6 +123,7 @@ public:
         to_consume.erase("singular");
         to_consume.erase("device");
         to_consume.erase("hash");
+        to_consume.erase("disable_logging");
     }
 
     void clear()
