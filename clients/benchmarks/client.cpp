@@ -620,6 +620,17 @@ try
             "N = no transpose, T = transpose, C = conjugate transpose.\n"
             "                           Indicates if a matrix should be transposed.\n"
             "                           ")
+        ("transA",
+         value<char>()->default_value('N'),
+            "N = no transpose, T = transpose, C = conjugate transpose.\n"
+            "                           Indicates if matrix A should be transposed.\n"
+            "                           ")
+
+        ("transB",
+         value<char>()->default_value('N'),
+            "N = no transpose, T = transpose, C = conjugate transpose.\n"
+            "                           Indicates if matrix B should be transposed.\n"
+            "                           ")
 
         ("uplo",
          value<char>()->default_value('U'),
