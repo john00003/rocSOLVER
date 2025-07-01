@@ -240,6 +240,8 @@ find_package(rocprim REQUIRED CONFIG PATHS ${ROCM_PATH})
 rocm_package_add_rpm_dependencies(STATIC_DEPENDS "rocprim-static-devel")
 rocm_package_add_deb_dependencies(STATIC_DEPENDS "rocprim-static-dev")
 
+find_library(ROCTX_LIBRARY NAME roctx64 HINTS ${ROCM_PATH}/lib)
+
 add_subdirectory(common)
 
 if(BUILD_LIBRARY)
