@@ -1,4 +1,4 @@
-/************************************************************************ 
+/************************************************************************
  * Derived from the BSD3-licensed
  * LAPACK routine (version 3.7.0) --
  *     Univ. of Tennessee, Univ. of California Berkeley,
@@ -157,7 +157,10 @@ rocblas_status rocsolver_syevd_heevd_template(rocblas_handle handle,
 
     // quick return
     if(batch_count == 0)
+    {
+        roctxRangePop();
         return rocblas_status_success;
+    }
 
     hipStream_t stream;
     rocblas_get_stream(handle, &stream);

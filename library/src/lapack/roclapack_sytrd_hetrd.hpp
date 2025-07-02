@@ -36,6 +36,7 @@
 #include "rocblas.hpp"
 #include "roclapack_sytd2_hetd2.hpp"
 #include "rocsolver/rocsolver.h"
+#include "roctracer/roctx.h"
 
 ROCSOLVER_BEGIN_NAMESPACE
 
@@ -147,10 +148,14 @@ rocblas_status rocsolver_sytrd_hetrd_template(rocblas_handle handle,
 {
     ROCSOLVER_ENTER("sytrd_hetrd", "uplo:", uplo, "n:", n, "shiftA:", shiftA, "lda:", lda,
                     "bc:", batch_count);
+    roctxRangePush("start of sytrd_hetrd_template");
 
     // quick return
     if(n == 0 || batch_count == 0)
+    {
+        roctxRangePop();
         return rocblas_status_success;
+    }
 
     hipStream_t stream;
     rocblas_get_stream(handle, &stream);
@@ -159,9 +164,12 @@ rocblas_status rocsolver_sytrd_hetrd_template(rocblas_handle handle,
 
     // if the matrix is too small, use the unblocked variant of the algorithm
     if(n <= kk)
+    {
+        roctxRangePop();
         return rocsolver_sytd2_hetd2_template(handle, uplo, n, A, shiftA, lda, strideA, D, strideD,
                                               E, strideE, tau, strideP, batch_count, scalars,
                                               work_Acpy, norms, tmptau_W, workArr);
+    }
 
     // everything must be executed with scalars on the device
     rocblas_pointer_mode old_mode;
@@ -277,6 +285,7 @@ rocblas_status rocsolver_sytrd_hetrd_template(rocblas_handle handle,
     }
 
     rocblas_set_pointer_mode(handle, old_mode);
+    roctxRangePop();
     return rocblas_status_success;
 }
 

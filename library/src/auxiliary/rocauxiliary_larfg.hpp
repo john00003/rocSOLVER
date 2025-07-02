@@ -35,6 +35,7 @@
 #include "rocblas.hpp"
 #include "rocsolver/rocsolver.h"
 #include "rocsolver_run_specialized_kernels.hpp"
+#include "roctracer/roctx.h"
 
 #if defined(__GFX9__)
 __device__ static constexpr int WarpSize = 64;
@@ -245,10 +246,14 @@ rocblas_status rocsolver_larfg_template(rocblas_handle handle,
     // TODO: How to get alpha for trace logging
     ROCSOLVER_ENTER("larfg", "n:", n, "shiftA:", shifta, "shiftX:", shiftx, "incx:", incx,
                     "bc:", batch_count);
+    roctxRangePush("start of largf_template");
 
     // quick return
     if(n == 0 || batch_count == 0)
+    {
+        roctxRangePop();
         return rocblas_status_success;
+    }
 
     hipStream_t stream;
     rocblas_get_stream(handle, &stream);
@@ -266,6 +271,7 @@ rocblas_status rocsolver_larfg_template(rocblas_handle handle,
             ROCSOLVER_LAUNCH_KERNEL((set_diag<T>), setDiag, threads, 0, stream, beta, shiftb,
                                     strideb, alpha, shifta, n, stridex, (I)1, true);
         }
+        roctxRangePop();
         return rocblas_status_success;
     }
 
@@ -279,6 +285,7 @@ rocblas_status rocsolver_larfg_template(rocblas_handle handle,
         HIP_CHECK(hipGetDeviceProperties(&deviceProperties, device));
         if(deviceProperties.warpSize >= 64)
         {
+            roctxRangePop();
             return larfg_run_small(handle, n, alpha, shifta, stridex, beta, shiftb, strideb, x,
                                    shiftx, incx, stridex, tau, strideP, batch_count);
         }
@@ -302,6 +309,7 @@ rocblas_status rocsolver_larfg_template(rocblas_handle handle,
     rocblasCall_scal<T>(handle, n - 1, norms, 1, x, shiftx, incx, stridex, batch_count);
 
     rocblas_set_pointer_mode(handle, old_mode);
+    roctxRangePop();
     return rocblas_status_success;
 }
 

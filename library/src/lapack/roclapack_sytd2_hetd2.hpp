@@ -4,7 +4,7 @@
  *     Univ. of Tennessee, Univ. of California Berkeley,
  *     Univ. of Colorado Denver and NAG Ltd..
  *     December 2016
- * Copyright (C) 2020-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2020-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -242,10 +242,14 @@ rocblas_status rocsolver_sytd2_hetd2_template(rocblas_handle handle,
 {
     ROCSOLVER_ENTER("sytd2_hetd2", "uplo:", uplo, "n:", n, "shiftA:", shiftA, "lda:", lda,
                     "bc:", batch_count);
+    roctxRangePush("start of sytd2_hetd2_template");
 
     // quick return
     if(n == 0 || batch_count == 0)
+    {
+        roctxRangePop();
         return rocblas_status_success;
+    }
 
     hipStream_t stream;
     rocblas_get_stream(handle, &stream);
@@ -361,6 +365,7 @@ rocblas_status rocsolver_sytd2_hetd2_template(rocblas_handle handle,
                             strideA, D, strideD, E, strideE);
 
     rocblas_set_pointer_mode(handle, old_mode);
+    roctxRangePop();
     return rocblas_status_success;
 }
 
