@@ -1,5 +1,5 @@
 /* **************************************************************************
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,6 +43,7 @@
 #include "rocsolver/rocsolver.h"
 #include "rocsolver_datatype2string.hpp"
 #include "rocsolver_logvalue.hpp"
+#include "roctracer/roctx.h"
 
 ROCSOLVER_BEGIN_NAMESPACE
 
@@ -50,41 +51,64 @@ ROCSOLVER_BEGIN_NAMESPACE
  * rocSOLVER logging macros
  ***************************************************************************/
 
-#define ROCSOLVER_ENTER_TOP(name, ...)                                                      \
-    std::unique_ptr<rocsolver_logger::scope_guard<T>> _log_token;                           \
-    do                                                                                      \
-    {                                                                                       \
-        if(rocsolver_logger::is_logging_enabled())                                          \
-        {                                                                                   \
-            rocsolver_logger::instance()->log_enter_top_level<T>(handle, "rocsolver", name, \
-                                                                 __VA_ARGS__);              \
-            _log_token = std::make_unique<rocsolver_logger::scope_guard<T>>(true, handle);  \
-        }                                                                                   \
-    } while(0)
-#define ROCSOLVER_ENTER(name, ...)                                                              \
+#define ROCSOLVER_ENTER_TOP(name, ...)                                                          \
     std::unique_ptr<rocsolver_logger::scope_guard<T>> _log_token;                               \
+    std::unique_ptr<rocsolver_logger::roctx_scope_guard<T>> _roctx_log_token;                   \
+                                                                                                \
+    roctx_range_id_t roctx_id = roctxRangeStart(                                                \
+        fmt::format("{}_{}{}", "rocsolver", rocblas2char_precision<T>, name).c_str());          \
     do                                                                                          \
     {                                                                                           \
+        _roctx_log_token                                                                        \
+            = std::make_unique<rocsolver_logger::roctx_scope_guard<T>>(true, handle, roctx_id); \
         if(rocsolver_logger::is_logging_enabled())                                              \
         {                                                                                       \
-            rocsolver_logger::instance()->log_enter<T>(handle, "rocsolver", name, __VA_ARGS__); \
-            _log_token = std::make_unique<rocsolver_logger::scope_guard<T>>(false, handle);     \
+            rocsolver_logger::instance()->log_enter_top_level<T>(handle, "rocsolver", name,     \
+                                                                 __VA_ARGS__);                  \
+            _log_token = std::make_unique<rocsolver_logger::scope_guard<T>>(true, handle);      \
         }                                                                                       \
     } while(0)
-#define ROCBLAS_ENTER(name, ...)                                                              \
-    std::unique_ptr<rocsolver_logger::scope_guard<T>> _log_token;                             \
-    do                                                                                        \
-    {                                                                                         \
-        if(rocsolver_logger::is_logging_enabled())                                            \
-        {                                                                                     \
-            rocsolver_logger::instance()->log_enter<T>(handle, "rocblas", name, __VA_ARGS__); \
-            _log_token = std::make_unique<rocsolver_logger::scope_guard<T>>(false, handle);   \
-        }                                                                                     \
+#define ROCSOLVER_ENTER(name, ...)                                                               \
+    std::unique_ptr<rocsolver_logger::scope_guard<T>> _log_token;                                \
+    std::unique_ptr<rocsolver_logger::roctx_scope_guard<T>> _roctx_log_token;                    \
+                                                                                                 \
+    roctx_range_id_t roctx_id                                                                    \
+        = roctxRangeStart(fmt::format("{}_{}_template", "rocsolver", name).c_str());             \
+    do                                                                                           \
+    {                                                                                            \
+        _roctx_log_token                                                                         \
+            = std::make_unique<rocsolver_logger::roctx_scope_guard<T>>(false, handle, roctx_id); \
+        if(rocsolver_logger::is_logging_enabled())                                               \
+        {                                                                                        \
+            rocsolver_logger::instance()->log_enter<T>(handle, "rocsolver", name, __VA_ARGS__);  \
+            _log_token = std::make_unique<rocsolver_logger::scope_guard<T>>(false, handle);      \
+        }                                                                                        \
+    } while(0)
+#define ROCBLAS_ENTER(name, ...)                                                                 \
+    std::unique_ptr<rocsolver_logger::scope_guard<T>> _log_token;                                \
+    std::unique_ptr<rocsolver_logger::roctx_scope_guard<T>> _roctx_log_token;                    \
+                                                                                                 \
+    roctx_range_id_t roctx_id                                                                    \
+        = roctxRangeStart(fmt::format("{}_{}_template", "rocblas", name).c_str());               \
+    do                                                                                           \
+    {                                                                                            \
+        _roctx_log_token                                                                         \
+            = std::make_unique<rocsolver_logger::roctx_scope_guard<T>>(false, handle, roctx_id); \
+        if(rocsolver_logger::is_logging_enabled())                                               \
+        {                                                                                        \
+            rocsolver_logger::instance()->log_enter<T>(handle, "rocblas", name, __VA_ARGS__);    \
+            _log_token = std::make_unique<rocsolver_logger::scope_guard<T>>(false, handle);      \
+        }                                                                                        \
     } while(0)
 #define ROCSOLVER_LAUNCH_KERNEL(name, ...)                                                          \
     do                                                                                              \
     {                                                                                               \
         std::unique_ptr<rocsolver_logger::scope_guard<T>> _kernel_log_token;                        \
+        std::unique_ptr<rocsolver_logger::roctx_scope_guard<T>> _roctx_log_token;                   \
+                                                                                                    \
+        roctx_range_id_t roctx_id = roctxRangeStart(fmt::format("{}_template", #name).c_str());     \
+        _roctx_log_token                                                                            \
+            = std::make_unique<rocsolver_logger::roctx_scope_guard<T>>(false, handle, roctx_id);    \
         if(rocsolver_logger::is_logging_enabled() && rocsolver_logger::is_kernel_logging_enabled()) \
         {                                                                                           \
             rocsolver_logger::instance()->log_enter<T>(handle, nullptr, #name);                     \
@@ -385,6 +409,39 @@ public:
 
         // Assignment operator is deleted
         scope_guard& operator=(const scope_guard&) = delete;
+    };
+
+    template <typename T>
+    struct roctx_scope_guard
+    {
+        bool top_level;
+        rocblas_handle handle;
+        roctx_range_id_t roctx_id;
+
+        // Constructor
+        roctx_scope_guard(bool top_level, rocblas_handle handle, roctx_range_id_t roctx_id)
+            : top_level(top_level)
+            , handle(handle)
+            , roctx_id(roctx_id)
+        {
+        }
+
+        // Copy constructor is deleted
+        roctx_scope_guard(const roctx_scope_guard&) = delete;
+
+        // Destructor
+        ~roctx_scope_guard()
+        {
+            roctxRangeStop(roctx_id);
+            //     if(top_level)
+            //         rocsolver_logger::instance()->log_exit_top_level<T>(handle);
+            //     else
+            //         rocsolver_logger::instance()->log_exit<T>(handle);
+            // }
+        }
+
+        // Assignment operator is deleted
+        roctx_scope_guard& operator=(const roctx_scope_guard&) = delete;
     };
 
     friend rocblas_status rocsolver_log_begin_impl(void);
