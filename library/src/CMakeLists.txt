@@ -387,6 +387,7 @@ add_library(roc::rocsolver ALIAS rocsolver)
 target_link_libraries(rocsolver
   PUBLIC
     roc::rocblas
+    ${ROCTX_LIBRARY}
   PRIVATE
     $<BUILD_INTERFACE:rocsolver-common> # https://gitlab.kitware.com/cmake/cmake/-/issues/15415
     roc::rocprim
