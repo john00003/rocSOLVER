@@ -675,14 +675,8 @@ void syevd_heevd_getPerfData(const rocblas_handle handle,
 
     syevd_heevd_initData<true, false, T>(handle, evect, n, dA, lda, bc, hA, A, 0);
 
-    // cold calls
-    for(int iter = 0; iter < 2; iter++)
-    {
-        syevd_heevd_initData<false, true, T>(handle, evect, n, dA, lda, bc, hA, A, 0);
-
-        CHECK_ROCBLAS_ERROR(rocsolver_syevd_heevd(STRIDED, handle, evect, uplo, n, dA.data(), lda, stA,
-                                                  dD.data(), stD, dE.data(), stE, dinfo.data(), bc));
-    }
+    // randominze the elements of hA
+    rocblas_init<T>(hA, true);
 
     // gpu-lapack performance
     hipStream_t stream;
