@@ -675,9 +675,6 @@ void syevd_heevd_getPerfData(const rocblas_handle handle,
 
     syevd_heevd_initData<true, false, T>(handle, evect, n, dA, lda, bc, hA, A, 0);
 
-    // randominze the elements of hA
-    rocblas_init<T>(hA, true);
-
     // gpu-lapack performance
     hipStream_t stream;
     CHECK_ROCBLAS_ERROR(rocblas_get_stream(handle, &stream));
