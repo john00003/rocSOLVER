@@ -673,11 +673,38 @@ void syevd_heevd_getPerfData(const rocblas_handle handle,
         *cpu_time_used = get_time_us_no_sync() - *cpu_time_used;
     }
 
+    hipStream_t *captureStream;
+    hipGraph_t graph;
+    rocblas_get_stream(handle, captureStream);
     syevd_heevd_initData<true, false, T>(handle, evect, n, dA, lda, bc, hA, A, 0);
 
+        for(int iter = 0; iter < 2; iter++)
+                {
+                            syevd_heevd_initData<false, true, T>(handle, evect, n, dA, lda, bc, hA, A, 0);
+
+                    if (iter == 1){
+                        hipStreamBeginCapture(*captureStream, hipStreamCaptureModeGlobal);
+                    }
+                                    CHECK_ROCBLAS_ERROR(rocsolver_syevd_heevd(STRIDED, handle, evect, uplo, n, dA.data(), lda, stA, dD.data(), stD, dE.data(), stE, dinfo.data(), bc));
+
+                    if (iter == 1){
+                        hipStreamEndCapture(*captureStream, &graph);
+                    }
+
+                                        }
+
     // gpu-lapack performance
-    hipStream_t stream;
-    CHECK_ROCBLAS_ERROR(rocblas_get_stream(handle, &stream));
+    // hipStream_t stream;
+    //CHECK_ROCBLAS_ERROR(rocblas_get_stream(handle, &stream));
+    // Create an executable graph from the captured graph
+    hipGraphExec_t graphExec;
+    hipGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
+
+    // The graph template can be deleted after the instantiation if it's not needed for later use
+    hipGraphDestroy(graph);
+
+    // Actually launch the graph. The stream does not have
+    // to be the same as the one used for capturing.
     double start;
 
     if(profile > 0)
@@ -694,12 +721,15 @@ void syevd_heevd_getPerfData(const rocblas_handle handle,
     {
         syevd_heevd_initData<false, true, T>(handle, evect, n, dA, lda, bc, hA, A, 0);
 
-        start = get_time_us_sync(stream);
-        rocsolver_syevd_heevd(STRIDED, handle, evect, uplo, n, dA.data(), lda, stA, dD.data(), stD,
-                              dE.data(), stE, dinfo.data(), bc);
-        *gpu_time_used += get_time_us_sync(stream) - start;
+        start = get_time_us_sync(*captureStream);
+        hipGraphLaunch(graphExec, *captureStream);
+        //rocsolver_syevd_heevd(STRIDED, handle, evect, uplo, n, dA.data(), lda, stA, dD.data(), stD,
+        //                      dE.data(), stE, dinfo.data(), bc);
+        *gpu_time_used += get_time_us_sync(*captureStream) - start;
     }
     *gpu_time_used /= hot_calls;
+    hipGraphExecDestroy(graphExec);
+    hipStreamDestroy(*captureStream);
 }
 
 template <bool BATCHED, bool STRIDED, typename T>
