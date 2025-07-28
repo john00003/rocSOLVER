@@ -29,14 +29,14 @@
 
 ROCSOLVER_BEGIN_NAMESPACE
 
-template <typename T, typename U>
+template <typename T, typename U, typename I>
 rocblas_status rocsolver_trtri_impl(rocblas_handle handle,
                                     const rocblas_fill uplo,
                                     const rocblas_diagonal diag,
-                                    const rocblas_int n,
+                                    const I n,
                                     U A,
-                                    const rocblas_int lda,
-                                    rocblas_int* info)
+                                    const I lda,
+                                    I* info)
 {
     ROCSOLVER_ENTER_TOP("trtri", "--uplo", uplo, "--diag", diag, "-n", n, "--lda", lda);
 
@@ -49,11 +49,11 @@ rocblas_status rocsolver_trtri_impl(rocblas_handle handle,
         return st;
 
     // working with unshifted arrays
-    rocblas_int shiftA = 0;
+    I shiftA = 0;
 
     // normal (non-batched non-strided) execution
     rocblas_stride strideA = 0;
-    rocblas_int batch_count = 1;
+    I batch_count = 1;
 
     // memory workspace sizes:
     // size of reusable workspace (for calling TRSM)
@@ -146,6 +146,69 @@ rocblas_status rocsolver_ztrtri(rocblas_handle handle,
 {
     return rocsolver::rocsolver_trtri_impl<rocblas_double_complex>(handle, uplo, diag, n, A, lda,
                                                                    info);
+}
+
+
+rocblas_status rocsolver_strtri_64(rocblas_handle handle,
+                                const rocblas_fill uplo,
+                                const rocblas_diagonal diag,
+                                const int64_t n,
+                                float* A,
+                                const int64_t lda,
+                                int64_t* info)
+{
+    #ifdef HAVE_ROCBLAS_64
+        return rocsolver::rocsolver_trtri_impl<float>(handle, uplo, diag, n, A, lda, info);
+    #else
+        return rocblas_status_not_implemented;
+    #endif
+}
+
+rocblas_status rocsolver_dtrtri_64(rocblas_handle handle,
+                                const rocblas_fill uplo,
+                                const rocblas_diagonal diag,
+                                const int64_t n,
+                                double* A,
+                                const int64_t lda,
+                                int64_t* info)
+{
+    #ifdef HAVE_ROCBLAS_64
+        return rocsolver::rocsolver_trtri_impl<double>(handle, uplo, diag, n, A, lda, info);
+    #else
+        return rocblas_status_not_implemented;
+    #endif
+}
+
+rocblas_status rocsolver_ctrtri_64(rocblas_handle handle,
+                                const rocblas_fill uplo,
+                                const rocblas_diagonal diag,
+                                const int64_t n,
+                                rocblas_float_complex* A,
+                                const int64_t lda,
+                                int64_t* info)
+{
+    #ifdef HAVE_ROCBLAS_64
+        return rocsolver::rocsolver_trtri_impl<rocblas_float_complex>(handle, uplo, diag, n, A, lda,
+                                                                  info);
+    #else
+        return rocblas_status_not_implemented;
+    #endif
+}
+
+rocblas_status rocsolver_ztrtri_64(rocblas_handle handle,
+                                const rocblas_fill uplo,
+                                const rocblas_diagonal diag,
+                                const int64_t n,
+                                rocblas_double_complex* A,
+                                const int64_t lda,
+                                int64_t* info)
+{
+    #ifdef HAVE_ROCBLAS_64
+        return rocsolver::rocsolver_trtri_impl<rocblas_double_complex>(handle, uplo, diag, n, A, lda,
+                                                                   info);
+    #else
+        return rocblas_status_not_implemented;
+    #endif
 }
 
 } // extern C

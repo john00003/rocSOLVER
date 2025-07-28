@@ -39,12 +39,12 @@
 
 ROCSOLVER_BEGIN_NAMESPACE
 
-template <typename T, typename U>
+template <typename T, typename U, typename I>
 ROCSOLVER_KERNEL void invdiag(const rocblas_diagonal diag,
-                              const rocblas_int n,
+                              const I n,
                               U A,
-                              const rocblas_int shiftA,
-                              const rocblas_int lda,
+                              const I shiftA,
+                              const I lda,
                               const rocblas_stride strideA,
                               T* alphas)
 {
@@ -66,33 +66,33 @@ ROCSOLVER_KERNEL void invdiag(const rocblas_diagonal diag,
     }
 }
 
-template <bool ISBATCHED>
-rocblas_int trtri_get_blksize(const rocblas_int dim)
+template <bool ISBATCHED, typename I>
+I trtri_get_blksize(const I dim)
 {
-    rocblas_int blk;
+    I blk;
 
     if(ISBATCHED)
     {
-        rocblas_int size[] = {TRTRI_BATCH_BLKSIZES};
-        rocblas_int intervals[] = {TRTRI_BATCH_INTERVALS};
-        rocblas_int max = TRTRI_BATCH_NUM_INTERVALS;
+        I size[] = {TRTRI_BATCH_BLKSIZES};
+        I intervals[] = {TRTRI_BATCH_INTERVALS};
+        I max = TRTRI_BATCH_NUM_INTERVALS;
         blk = size[get_index(intervals, max, dim)];
     }
     else
     {
-        rocblas_int size[] = {TRTRI_BLKSIZES};
-        rocblas_int intervals[] = {TRTRI_INTERVALS};
-        rocblas_int max = TRTRI_NUM_INTERVALS;
+        I size[] = {TRTRI_BLKSIZES};
+        I intervals[] = {TRTRI_INTERVALS};
+        I max = TRTRI_NUM_INTERVALS;
         blk = size[get_index(intervals, max, dim)];
     }
 
     return blk;
 }
 
-template <bool BATCHED, bool STRIDED, typename T>
+template <bool BATCHED, bool STRIDED, typename T, typename I>
 void rocsolver_trtri_getMemorySize(const rocblas_diagonal diag,
-                                   const rocblas_int n,
-                                   const rocblas_int batch_count,
+                                   const I n,
+                                   const I batch_count,
                                    size_t* size_work1,
                                    size_t* size_work2,
                                    size_t* size_work3,
@@ -117,7 +117,7 @@ void rocsolver_trtri_getMemorySize(const rocblas_diagonal diag,
     }
 
     // get block size
-    rocblas_int blk = trtri_get_blksize<ISBATCHED>(n);
+    I blk = trtri_get_blksize<ISBATCHED>(n);
 
     // size of temporary array required for copies
     if(diag == rocblas_diagonal_unit && blk > 0)
@@ -134,7 +134,7 @@ void rocsolver_trtri_getMemorySize(const rocblas_diagonal diag,
     size_t w1a, w1b, w3a, w3b;
 
     // requirements for TRTI2
-    rocblas_int nn = (blk == 1) ? n : blk;
+    I nn = (blk == 1) ? n : blk;
 #ifdef OPTIMAL
     if(nn <= TRTRI_MAX_COLS)
     {
@@ -174,7 +174,7 @@ void rocsolver_trtri_getMemorySize(const rocblas_diagonal diag,
     }
     else
     {
-        rocblas_int nn = (n % 128 != 0) ? n : n + 1;
+        I nn = (n % 128 != 0) ? n : n + 1;
         rocblasCall_trsm_mem<BATCHED, T>(rocblas_side_right, rocblas_operation_none, nn, blk, 1, 1,
                                          batch_count, &w1b, size_work2, &w3b, size_work4);
         *size_work1 = std::max(w1a, w1b);
@@ -185,15 +185,15 @@ void rocsolver_trtri_getMemorySize(const rocblas_diagonal diag,
     }
 }
 
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocsolver_trtri_argCheck(rocblas_handle handle,
                                         const rocblas_fill uplo,
                                         const rocblas_diagonal diag,
-                                        const rocblas_int n,
-                                        const rocblas_int lda,
+                                        const I n,
+                                        const I lda,
                                         T A,
-                                        rocblas_int* info,
-                                        const rocblas_int batch_count = 1)
+                                        I* info,
+                                        const I batch_count = 1)
 {
     // order is important for unit tests:
 
@@ -218,16 +218,16 @@ rocblas_status rocsolver_trtri_argCheck(rocblas_handle handle,
     return rocblas_status_continue;
 }
 
-template <typename T, typename U>
+template <typename T, typename U, typename I>
 void trti2(rocblas_handle handle,
            const rocblas_fill uplo,
            const rocblas_diagonal diag,
-           const rocblas_int n,
+           const I n,
            U A,
-           const rocblas_int shiftA,
-           const rocblas_int lda,
+           const I shiftA,
+           const I lda,
            const rocblas_stride strideA,
-           const rocblas_int batch_count,
+           const I batch_count,
            T* work,
            T* alphas)
 {
@@ -250,13 +250,13 @@ void trti2(rocblas_handle handle,
     rocblas_set_pointer_mode(handle, rocblas_pointer_mode_device);
 
     // inverse of the diagonal (reciprocals)
-    rocblas_int blocks = (n - 1) / 32 + 1;
+    I blocks = (n - 1) / 32 + 1;
     ROCSOLVER_LAUNCH_KERNEL(invdiag<T>, dim3(blocks, batch_count), dim3(32, 1), 0, stream, diag, n,
                             A, shiftA, lda, strideA, alphas);
 
     if(uplo == rocblas_fill_upper)
     {
-        for(rocblas_int j = 1; j < n; ++j)
+        for(I j = 1; j < n; ++j)
         {
             rocblasCall_trmv<T>(handle, uplo, rocblas_operation_none, diag, j, A, shiftA, lda,
                                 strideA, A, shiftA + idx2D(0, j, lda), 1, strideA, work, stdw,
@@ -268,7 +268,7 @@ void trti2(rocblas_handle handle,
     }
     else //rocblas_fill_lower
     {
-        for(rocblas_int j = n - 2; j >= 0; --j)
+        for(I j = n - 2; j >= 0; --j)
         {
             rocblasCall_trmv<T>(handle, uplo, rocblas_operation_none, diag, n - j - 1, A,
                                 shiftA + idx2D(j + 1, j + 1, lda), lda, strideA, A,
@@ -282,17 +282,17 @@ void trti2(rocblas_handle handle,
     rocblas_set_pointer_mode(handle, old_mode);
 }
 
-template <bool BATCHED, bool STRIDED, typename T, typename U>
+template <bool BATCHED, bool STRIDED, typename T, typename U, typename I>
 rocblas_status rocsolver_trtri_template(rocblas_handle handle,
                                         const rocblas_fill uplo,
                                         const rocblas_diagonal diag,
-                                        const rocblas_int n,
+                                        const I n,
                                         U A,
-                                        const rocblas_int shiftA,
-                                        const rocblas_int lda,
+                                        const I shiftA,
+                                        const I lda,
                                         const rocblas_stride strideA,
-                                        rocblas_int* info,
-                                        const rocblas_int batch_count,
+                                        I* info,
+                                        const I batch_count,
                                         void* work1,
                                         void* work2,
                                         void* work3,
@@ -313,7 +313,7 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
     static constexpr bool ISBATCHED = BATCHED || STRIDED;
 
     // start with info = 0
-    rocblas_int blocks = (batch_count - 1) / 32 + 1;
+    I blocks = (batch_count - 1) / 32 + 1;
     ROCSOLVER_LAUNCH_KERNEL(reset_info, dim3(blocks, 1, 1), dim3(32, 1, 1), 0, stream, info,
                             batch_count, 0);
 
@@ -329,7 +329,7 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
     T minone = -1;
 
     blocks = (n - 1) / 32 + 1;
-    rocblas_int ldw = n;
+    I ldw = n;
     rocblas_stride strideW = n * n;
 
     // check for singularities if non-unit diagonal
@@ -340,8 +340,8 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
     }
 
     // get block size
-    rocblas_int blk = trtri_get_blksize<ISBATCHED>(n);
-    rocblas_int jb;
+    I blk = trtri_get_blksize<ISBATCHED>(n);
+    I jb;
 
     if(diag == rocblas_diagonal_non_unit && blk > 0)
     {
@@ -374,7 +374,7 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
         // use blocked algorithm with block size blk
         if(uplo == rocblas_fill_upper)
         {
-            for(rocblas_int j = 0; j < n; j += blk)
+            for(I j = 0; j < n; j += blk)
             {
                 jb = std::min(n - j, blk);
 
@@ -394,8 +394,8 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
         }
         else // rocblas_fill_lower
         {
-            rocblas_int nn = ((n - 1) / blk) * blk + 1;
-            for(rocblas_int j = nn - 1; j >= 0; j -= blk)
+            I nn = ((n - 1) / blk) * blk + 1;
+            for(I j = nn - 1; j >= 0; j -= blk)
             {
                 jb = std::min(n - j, blk);
 
