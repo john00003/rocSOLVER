@@ -35,16 +35,16 @@
 #include "common/misc/rocsolver_arguments.hpp"
 #include "common/misc/rocsolver_test.hpp"
 
-template <bool STRIDED, typename T, typename U>
+template <bool STRIDED, typename T, typename U, typename I>
 void trtri_checkBadArgs(const rocblas_handle handle,
                         const rocblas_fill uplo,
                         const rocblas_diagonal diag,
-                        const rocblas_int n,
+                        const I n,
                         T dA,
-                        const rocblas_int lda,
+                        const I lda,
                         const rocblas_stride stA,
                         U dInfo,
-                        const rocblas_int bc)
+                        const I bc)
 {
     // handle
     EXPECT_ROCBLAS_STATUS(rocsolver_trtri(STRIDED, nullptr, uplo, diag, n, dA, lda, stA, dInfo, bc),
@@ -60,7 +60,7 @@ void trtri_checkBadArgs(const rocblas_handle handle,
 
     // sizes (only check batch_count if applicable)
     if(STRIDED)
-        EXPECT_ROCBLAS_STATUS(rocsolver_trtri(STRIDED, handle, uplo, diag, n, dA, lda, stA, dInfo, -1),
+        EXPECT_ROCBLAS_STATUS(rocsolver_trtri(STRIDED, handle, uplo, diag, n, dA, lda, stA, dInfo, (I) -1),
                               rocblas_status_invalid_size);
 
     // pointers
@@ -73,25 +73,25 @@ void trtri_checkBadArgs(const rocblas_handle handle,
 
     // quick return with invalid pointers
     EXPECT_ROCBLAS_STATUS(
-        rocsolver_trtri(STRIDED, handle, uplo, diag, 0, (T) nullptr, lda, stA, dInfo, bc),
+        rocsolver_trtri(STRIDED, handle, uplo, diag, (I) 0, (T) nullptr, lda, stA, dInfo, bc),
         rocblas_status_success);
 
     // quick return with zero batch_count if applicable
     if(STRIDED)
         EXPECT_ROCBLAS_STATUS(
-            rocsolver_trtri(STRIDED, handle, uplo, diag, n, dA, lda, stA, (U) nullptr, 0),
+            rocsolver_trtri(STRIDED, handle, uplo, diag, n, dA, lda, stA, (U) nullptr, (I) 0),
             rocblas_status_success);
 }
 
-template <bool BATCHED, bool STRIDED, typename T>
+template <bool BATCHED, bool STRIDED, typename T, typename I>
 void testing_trtri_bad_arg()
 {
     // safe arguments
     rocblas_local_handle handle;
-    rocblas_int n = 1;
-    rocblas_int lda = 1;
+    I n = 1;
+    I lda = 1;
     rocblas_stride stA = 1;
-    rocblas_int bc = 1;
+    I bc = 1;
     rocblas_diagonal diag = rocblas_diagonal_non_unit;
     rocblas_fill uplo = rocblas_fill_upper;
 
@@ -99,7 +99,7 @@ void testing_trtri_bad_arg()
     {
         // memory allocations
         device_batch_vector<T> dA(1, 1, 1);
-        device_strided_batch_vector<rocblas_int> dInfo(1, 1, 1, 1);
+        device_strided_batch_vector<I> dInfo(1, 1, 1, 1);
         CHECK_HIP_ERROR(dA.memcheck());
         CHECK_HIP_ERROR(dInfo.memcheck());
 
@@ -110,7 +110,7 @@ void testing_trtri_bad_arg()
     {
         // memory allocations
         device_strided_batch_vector<T> dA(1, 1, 1, 1);
-        device_strided_batch_vector<rocblas_int> dInfo(1, 1, 1, 1);
+        device_strided_batch_vector<I> dInfo(1, 1, 1, 1);
         CHECK_HIP_ERROR(dA.memcheck());
         CHECK_HIP_ERROR(dInfo.memcheck());
 
@@ -119,12 +119,12 @@ void testing_trtri_bad_arg()
     }
 }
 
-template <bool CPU, bool GPU, typename T, typename Td, typename Th>
+template <bool CPU, bool GPU, typename T, typename Td, typename Th, typename I>
 void trtri_initData(const rocblas_handle handle,
-                    const rocblas_int n,
+                    const I n,
                     Td& dA,
-                    const rocblas_int lda,
-                    const rocblas_int bc,
+                    const I lda,
+                    const I bc,
                     Th& hA,
                     const bool singular)
 {
@@ -133,12 +133,12 @@ void trtri_initData(const rocblas_handle handle,
         T tmp;
         rocblas_init<T>(hA, true);
 
-        for(rocblas_int b = 0; b < bc; ++b)
+        for(I b = 0; b < bc; ++b)
         {
             // scale A to avoid singularities
-            for(rocblas_int i = 0; i < n; i++)
+            for(I i = 0; i < n; i++)
             {
-                for(rocblas_int j = 0; j < n; j++)
+                for(I j = 0; j < n; j++)
                 {
                     if(i == j)
                         hA[b][i + j * lda] = hA[b][i + j * lda] / 10.0 + 1;
@@ -153,7 +153,7 @@ void trtri_initData(const rocblas_handle handle,
                 // always the same elements for debugging purposes
                 // the algorithm must detect the first zero pivot in those
                 // matrices in the batch that are singular
-                rocblas_int i = n / 4 + b;
+                I i = n / 4 + b;
                 i -= (i / n) * n;
                 hA[b][i + i * lda] = 0;
                 i = n / 2 + b;
@@ -173,16 +173,16 @@ void trtri_initData(const rocblas_handle handle,
     }
 }
 
-template <bool STRIDED, typename T, typename Td, typename Ud, typename Th, typename Uh>
+template <bool STRIDED, typename T, typename Td, typename Ud, typename Th, typename Uh, typename I>
 void trtri_getError(const rocblas_handle handle,
                     const rocblas_fill uplo,
                     const rocblas_diagonal diag,
-                    const rocblas_int n,
+                    const I n,
                     Td& dA,
-                    const rocblas_int lda,
+                    const I lda,
                     const rocblas_stride stA,
                     Ud& dInfo,
-                    const rocblas_int bc,
+                    const I bc,
                     Th& hA,
                     Th& hARes,
                     Uh& hInfo,
@@ -202,7 +202,7 @@ void trtri_getError(const rocblas_handle handle,
     CHECK_HIP_ERROR(hInfoRes.transfer_from(dInfo));
 
     // CPU lapack
-    for(rocblas_int b = 0; b < bc; ++b)
+    for(I b = 0; b < bc; ++b)
     {
         cpu_trtri(uplo, diag, n, hA[b], lda, hInfo[b]);
     }
@@ -210,7 +210,7 @@ void trtri_getError(const rocblas_handle handle,
     // check info for singularities
     double err = 0;
     *max_err = 0;
-    for(rocblas_int b = 0; b < bc; ++b)
+    for(I b = 0; b < bc; ++b)
     {
         EXPECT_EQ(hInfo[b][0], hInfoRes[b][0]) << "where b = " << b;
         if(hInfo[b][0] != hInfoRes[b][0])
@@ -222,7 +222,7 @@ void trtri_getError(const rocblas_handle handle,
     // (THIS DOES NOT ACCOUNT FOR NUMERICAL REPRODUCIBILITY ISSUES.
     // IT MIGHT BE REVISITED IN THE FUTURE)
     // using frobenius norm
-    for(rocblas_int b = 0; b < bc; ++b)
+    for(I b = 0; b < bc; ++b)
     {
         if(hInfoRes[b][0] == 0)
         {
@@ -232,21 +232,21 @@ void trtri_getError(const rocblas_handle handle,
     }
 }
 
-template <bool STRIDED, typename T, typename Td, typename Ud, typename Th, typename Uh>
+template <bool STRIDED, typename T, typename Td, typename Ud, typename Th, typename Uh, typename I>
 void trtri_getPerfData(const rocblas_handle handle,
                        const rocblas_fill uplo,
                        const rocblas_diagonal diag,
-                       const rocblas_int n,
+                       const I n,
                        Td& dA,
-                       const rocblas_int lda,
+                       const I lda,
                        const rocblas_stride stA,
                        Ud& dInfo,
-                       const rocblas_int bc,
+                       const I bc,
                        Th& hA,
                        Uh& hInfo,
                        double* gpu_time_used,
                        double* cpu_time_used,
-                       const rocblas_int hot_calls,
+                       const I hot_calls,
                        const int profile,
                        const bool profile_kernels,
                        const bool perf,
@@ -258,7 +258,7 @@ void trtri_getPerfData(const rocblas_handle handle,
 
         // cpu-lapack performance (only if not in perf mode)
         *cpu_time_used = get_time_us_no_sync();
-        for(rocblas_int b = 0; b < bc; ++b)
+        for(I b = 0; b < bc; ++b)
         {
             cpu_trtri(uplo, diag, n, hA[b], lda, hInfo[b]);
         }
@@ -291,7 +291,7 @@ void trtri_getPerfData(const rocblas_handle handle,
         rocsolver_log_set_max_levels(profile);
     }
 
-    for(rocblas_int iter = 0; iter < hot_calls; iter++)
+    for(I iter = 0; iter < hot_calls; iter++)
     {
         trtri_initData<false, true, T>(handle, n, dA, lda, bc, hA, singular);
 
@@ -302,21 +302,21 @@ void trtri_getPerfData(const rocblas_handle handle,
     *gpu_time_used /= hot_calls;
 }
 
-template <bool BATCHED, bool STRIDED, typename T>
+template <bool BATCHED, bool STRIDED, typename T, typename I>
 void testing_trtri(Arguments& argus)
 {
     // get arguments
     rocblas_local_handle handle;
-    rocblas_int n = argus.get<rocblas_int>("n");
-    rocblas_int lda = argus.get<rocblas_int>("lda", n);
+    I n = argus.get<I>("n");
+    I lda = argus.get<I>("lda", n);
     rocblas_stride stA = argus.get<rocblas_stride>("strideA", lda * n);
     char uploC = argus.get<char>("uplo");
     rocblas_fill uplo = char2rocblas_fill(uploC);
     char diagC = argus.get<char>("diag");
     rocblas_diagonal diag = char2rocblas_diagonal(diagC);
 
-    rocblas_int bc = argus.batch_count;
-    rocblas_int hot_calls = argus.iters;
+    I bc = argus.batch_count;
+    I hot_calls = argus.iters;
 
     rocblas_stride stARes = (argus.unit_check || argus.norm_check) ? stA : 0;
 
@@ -325,11 +325,11 @@ void testing_trtri(Arguments& argus)
     {
         if(BATCHED)
             EXPECT_ROCBLAS_STATUS(rocsolver_trtri(STRIDED, handle, uplo, diag, n, (T* const*)nullptr,
-                                                  lda, stA, (rocblas_int*)nullptr, bc),
+                                                  lda, stA, (I*)nullptr, bc),
                                   rocblas_status_invalid_value);
         else
             EXPECT_ROCBLAS_STATUS(rocsolver_trtri(STRIDED, handle, uplo, diag, n, (T*)nullptr, lda,
-                                                  stA, (rocblas_int*)nullptr, bc),
+                                                  stA, (I*)nullptr, bc),
                                   rocblas_status_invalid_value);
 
         if(argus.timing)
@@ -349,11 +349,11 @@ void testing_trtri(Arguments& argus)
     {
         if(BATCHED)
             EXPECT_ROCBLAS_STATUS(rocsolver_trtri(STRIDED, handle, uplo, diag, n, (T* const*)nullptr,
-                                                  lda, stA, (rocblas_int*)nullptr, bc),
+                                                  lda, stA, (I*)nullptr, bc),
                                   rocblas_status_invalid_size);
         else
             EXPECT_ROCBLAS_STATUS(rocsolver_trtri(STRIDED, handle, uplo, diag, n, (T*)nullptr, lda,
-                                                  stA, (rocblas_int*)nullptr, bc),
+                                                  stA, (I*)nullptr, bc),
                                   rocblas_status_invalid_size);
 
         if(argus.timing)
@@ -368,10 +368,10 @@ void testing_trtri(Arguments& argus)
         CHECK_ROCBLAS_ERROR(rocblas_start_device_memory_size_query(handle));
         if(BATCHED)
             CHECK_ALLOC_QUERY(rocsolver_trtri(STRIDED, handle, uplo, diag, n, (T* const*)nullptr,
-                                              lda, stA, (rocblas_int*)nullptr, bc));
+                                              lda, stA, (I*)nullptr, bc));
         else
             CHECK_ALLOC_QUERY(rocsolver_trtri(STRIDED, handle, uplo, diag, n, (T*)nullptr, lda, stA,
-                                              (rocblas_int*)nullptr, bc));
+                                              (I*)nullptr, bc));
 
         size_t size;
         CHECK_ROCBLAS_ERROR(rocblas_stop_device_memory_size_query(handle, &size));
@@ -385,10 +385,10 @@ void testing_trtri(Arguments& argus)
         // memory allocations
         host_batch_vector<T> hA(size_A, 1, bc);
         host_batch_vector<T> hARes(size_ARes, 1, bc);
-        host_strided_batch_vector<rocblas_int> hInfo(1, 1, 1, bc);
-        host_strided_batch_vector<rocblas_int> hInfoRes(1, 1, 1, bc);
+        host_strided_batch_vector<I> hInfo(1, 1, 1, bc);
+        host_strided_batch_vector<I> hInfoRes(1, 1, 1, bc);
         device_batch_vector<T> dA(size_A, 1, bc);
-        device_strided_batch_vector<rocblas_int> dInfo(1, 1, 1, bc);
+        device_strided_batch_vector<I> dInfo(1, 1, 1, bc);
         if(size_A)
             CHECK_HIP_ERROR(dA.memcheck());
         CHECK_HIP_ERROR(dInfo.memcheck());
@@ -422,10 +422,10 @@ void testing_trtri(Arguments& argus)
         // memory allocations
         host_strided_batch_vector<T> hA(size_A, 1, stA, bc);
         host_strided_batch_vector<T> hARes(size_ARes, 1, stARes, bc);
-        host_strided_batch_vector<rocblas_int> hInfo(1, 1, 1, bc);
-        host_strided_batch_vector<rocblas_int> hInfoRes(1, 1, 1, bc);
+        host_strided_batch_vector<I> hInfo(1, 1, 1, bc);
+        host_strided_batch_vector<I> hInfoRes(1, 1, 1, bc);
         device_strided_batch_vector<T> dA(size_A, 1, stA, bc);
-        device_strided_batch_vector<rocblas_int> dInfo(1, 1, 1, bc);
+        device_strided_batch_vector<I> dInfo(1, 1, 1, bc);
         if(size_A)
             CHECK_HIP_ERROR(dA.memcheck());
         CHECK_HIP_ERROR(dInfo.memcheck());

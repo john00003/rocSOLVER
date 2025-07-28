@@ -95,7 +95,8 @@ Arguments trtri_setup_arguments(trtri_tuple tup)
     return arg;
 }
 
-class TRTRI : public ::TestWithParam<trtri_tuple>
+template <typename I>
+class TRTRI_BASE : public ::TestWithParam<trtri_tuple>
 {
 protected:
     void TearDown() override
@@ -109,15 +110,23 @@ protected:
         Arguments arg = trtri_setup_arguments(GetParam());
 
         if(arg.peek<rocblas_int>("n") == 0 && arg.peek<char>("uplo") == 'L')
-            testing_trtri_bad_arg<BATCHED, STRIDED, T>();
+            testing_trtri_bad_arg<BATCHED, STRIDED, T, I>();
 
         arg.batch_count = (BATCHED || STRIDED ? 3 : 1);
         if(arg.singular == 1)
-            testing_trtri<BATCHED, STRIDED, T>(arg);
+            testing_trtri<BATCHED, STRIDED, T, I>(arg);
 
         arg.singular = 0;
-        testing_trtri<BATCHED, STRIDED, T>(arg);
+        testing_trtri<BATCHED, STRIDED, T, I>(arg);
     }
+};
+
+class TRTRI : public TRTRI_BASE<rocblas_int>
+{
+};
+
+class TRTRI_64 : public TRTRI_BASE<int64_t>
+{
 };
 
 // non-batch tests
@@ -138,6 +147,26 @@ TEST_P(TRTRI, __float_complex)
 }
 
 TEST_P(TRTRI, __double_complex)
+{
+    run_tests<false, false, rocblas_double_complex>();
+}
+
+TEST_P(TRTRI_64, __float)
+{
+    run_tests<false, false, float>();
+}
+
+TEST_P(TRTRI_64, __float)
+{
+    run_tests<false, false, double>();
+}
+
+TEST_P(TRTRI_64, __float)
+{
+    run_tests<false, false, rocblas_float_complex>();
+}
+
+TEST_P(TRTRI_64, __float)
 {
     run_tests<false, false, rocblas_double_complex>();
 }
