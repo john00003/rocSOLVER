@@ -1,5 +1,5 @@
 /* **************************************************************************
- * Copyright (C) 2021-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,15 +29,15 @@
 
 ROCSOLVER_BEGIN_NAMESPACE
 
-template <typename T, typename U>
+template <typename T, typename U, template I>
 rocblas_status rocsolver_trtri_batched_impl(rocblas_handle handle,
                                             const rocblas_fill uplo,
                                             const rocblas_diagonal diag,
-                                            const rocblas_int n,
+                                            const I n,
                                             U A,
-                                            const rocblas_int lda,
-                                            rocblas_int* info,
-                                            const rocblas_int batch_count)
+                                            const I lda,
+                                            I* info,
+                                            const I batch_count)
 {
     ROCSOLVER_ENTER_TOP("trtri_batched", "--uplo", uplo, "--diag", diag, "-n", n, "--lda", lda,
                         "--batch_count", batch_count);
@@ -51,7 +51,7 @@ rocblas_status rocsolver_trtri_batched_impl(rocblas_handle handle,
         return st;
 
     // working with unshifted arrays
-    rocblas_int shiftA = 0;
+    I shiftA = 0;
 
     // batched execution
     rocblas_stride strideA = 0;
@@ -153,6 +153,74 @@ rocblas_status rocsolver_ztrtri_batched(rocblas_handle handle,
 {
     return rocsolver::rocsolver_trtri_batched_impl<rocblas_double_complex>(handle, uplo, diag, n, A,
                                                                            lda, info, batch_count);
+}
+
+rocblas_status rocsolver_strtri_batched_64(rocblas_handle handle,
+                                        const rocblas_fill uplo,
+                                        const rocblas_diagonal diag,
+                                        const int64_t n,
+                                        float* const A[],
+                                        const int64_t lda,
+                                        int64_t* info,
+                                        const int64_t batch_count)
+{
+    #ifdef HAVE_ROCBLAS_64
+        return rocsolver::rocsolver_trtri_batched_impl<float>(handle, uplo, diag, n, A, lda, info,
+                                                          batch_count);
+    #else
+        return rocblas_status_not_implemented;
+    #endif
+}
+
+rocblas_status rocsolver_dtrtri_batched_64(rocblas_handle handle,
+                                        const rocblas_fill uplo,
+                                        const rocblas_diagonal diag,
+                                        const int64_t n,
+                                        double* const A[],
+                                        const int64_t lda,
+                                        int64_t* info,
+                                        const int64_t batch_count)
+{
+    #ifdef HAVE_ROCBLAS_64
+        return rocsolver::rocsolver_trtri_batched_impl<double>(handle, uplo, diag, n, A, lda, info,
+                                                           batch_count);
+    #else
+        return rocblas_status_not_implemented;
+    #endif
+}
+
+rocblas_status rocsolver_ctrtri_batched_64(rocblas_handle handle,
+                                        const rocblas_fill uplo,
+                                        const rocblas_diagonal diag,
+                                        const int64_t n,
+                                        rocblas_float_complex* const A[],
+                                        const int64_t lda,
+                                        int64_t* info,
+                                        const int64_t batch_count)
+{
+    #ifdef HAVE_ROCBLAS_64
+        return rocsolver::rocsolver_trtri_batched_impl<rocblas_float_complex>(handle, uplo, diag, n, A,
+                                                                          lda, info, batch_count);
+    #else
+        return rocblas_status_not_implemented;
+    #endif
+}
+
+rocblas_status rocsolver_ztrtri_batched_64(rocblas_handle handle,
+                                        const rocblas_fill uplo,
+                                        const rocblas_diagonal diag,
+                                        const int64_t n,
+                                        rocblas_double_complex* const A[],
+                                        const int64_t lda,
+                                        int64_t* info,
+                                        const int64_t batch_count)
+{
+    #ifdef HAVE_ROCBLAS_64
+        return rocsolver::rocsolver_trtri_batched_impl<rocblas_double_complex>(handle, uplo, diag, n, A,
+                                                                           lda, info, batch_count);
+    #else
+        return rocblas_status_not_implemented;
+    #endif
 }
 
 } // extern C
