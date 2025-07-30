@@ -24854,6 +24854,38 @@ ROCSOLVER_EXPORT rocblas_status rocsolver_ztrtri(rocblas_handle handle,
                                                  rocblas_double_complex* A,
                                                  const rocblas_int lda,
                                                  rocblas_int* info);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_strtri_64(rocblas_handle handle,
+                                                 const rocblas_fill uplo,
+                                                 const rocblas_diagonal diag,
+                                                 const int64_t n,
+                                                 float* A,
+                                                 const int64_t lda,
+                                                 int64_t* info);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_dtrtri_64(rocblas_handle handle,
+                                                 const rocblas_fill uplo,
+                                                 const rocblas_diagonal diag,
+                                                 const int64_t n,
+                                                 double* A,
+                                                 const int64_t lda,
+                                                 int64_t* info);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_ctrtri_64(rocblas_handle handle,
+                                                 const rocblas_fill uplo,
+                                                 const rocblas_diagonal diag,
+                                                 const int64_t n,
+                                                 rocblas_float_complex* A,
+                                                 const int64_t lda,
+                                                 int64_t* info);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_ztrtri_64(rocblas_handle handle,
+                                                 const rocblas_fill uplo,
+                                                 const rocblas_diagonal diag,
+                                                 const int64_t n,
+                                                 rocblas_double_complex* A,
+                                                 const int64_t lda,
+                                                 int64_t* info);
 //! @}
 
 /*! @{
@@ -24928,6 +24960,42 @@ ROCSOLVER_EXPORT rocblas_status rocsolver_ztrtri_batched(rocblas_handle handle,
                                                          const rocblas_int lda,
                                                          rocblas_int* info,
                                                          const rocblas_int batch_count);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_strtri_batched_64(rocblas_handle handle,
+                                                         const rocblas_fill uplo,
+                                                         const rocblas_diagonal diag,
+                                                         const int64_t n,
+                                                         float* const A[],
+                                                         const int64_t lda,
+                                                         int64_t* info,
+                                                         const int64_t batch_count);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_dtrtri_batched_64(rocblas_handle handle,
+                                                         const rocblas_fill uplo,
+                                                         const rocblas_diagonal diag,
+                                                         const int64_t n,
+                                                         double* const A[],
+                                                         const int64_t lda,
+                                                         int64_t* info,
+                                                         const int64_t batch_count);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_ctrtri_batched_64(rocblas_handle handle,
+                                                         const rocblas_fill uplo,
+                                                         const rocblas_diagonal diag,
+                                                         const int64_t n,
+                                                         rocblas_float_complex* const A[],
+                                                         const int64_t lda,
+                                                         int64_t* info,
+                                                         const int64_t batch_count);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_ztrtri_batched_64(rocblas_handle handle,
+                                                         const rocblas_fill uplo,
+                                                         const rocblas_diagonal diag,
+                                                         const int64_t n,
+                                                         rocblas_double_complex* const A[],
+                                                         const int64_t lda,
+                                                         int64_t* info,
+                                                         const int64_t batch_count);
 //! @}
 
 /*! @{
