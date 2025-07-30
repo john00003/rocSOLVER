@@ -6616,6 +6616,66 @@ inline rocblas_status rocsolver_trtri(bool STRIDED,
                    : rocsolver_ztrtri(handle, uplo, diag, n, A, lda, info);
 }
 
+inline rocblas_status rocsolver_trtri(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_fill uplo,
+                                      rocblas_diagonal diag,
+                                      int64_t n,
+                                      float* A,
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      int64_t* info,
+                                      int64_t bc)
+{
+    return STRIDED ? rocsolver_strtri_strided_batched_64(handle, uplo, diag, n, A, lda, stA, info, bc)
+                   : rocsolver_strtri_64(handle, uplo, diag, n, A, lda, info);
+}
+
+inline rocblas_status rocsolver_trtri(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_fill uplo,
+                                      rocblas_diagonal diag,
+                                      int64_t n,
+                                      double* A,
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      int64_t* info,
+                                      int64_t bc)
+{
+    return STRIDED ? rocsolver_dtrtri_strided_batched_64(handle, uplo, diag, n, A, lda, stA, info, bc)
+                   : rocsolver_dtrtri_64(handle, uplo, diag, n, A, lda, info);
+}
+
+inline rocblas_status rocsolver_trtri(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_fill uplo,
+                                      rocblas_diagonal diag,
+                                      int64_t n,
+                                      rocblas_float_complex* A,
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      int64_t* info,
+                                      int64_t bc)
+{
+    return STRIDED ? rocsolver_ctrtri_strided_batched_64(handle, uplo, diag, n, A, lda, stA, info, bc)
+                   : rocsolver_ctrtri_64(handle, uplo, diag, n, A, lda, info);
+}
+
+inline rocblas_status rocsolver_trtri(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_fill uplo,
+                                      rocblas_diagonal diag,
+                                      int64_t n,
+                                      rocblas_double_complex* A,
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      int64_t* info,
+                                      int64_t bc)
+{
+    return STRIDED ? rocsolver_ztrtri_strided_batched_64(handle, uplo, diag, n, A, lda, stA, info, bc)
+                   : rocsolver_ztrtri_64(handle, uplo, diag, n, A, lda, info);
+}
+
 // batched
 inline rocblas_status rocsolver_trtri(bool STRIDED,
                                       rocblas_handle handle,
@@ -6671,6 +6731,62 @@ inline rocblas_status rocsolver_trtri(bool STRIDED,
                                       rocblas_int bc)
 {
     return rocsolver_ztrtri_batched(handle, uplo, diag, n, A, lda, info, bc);
+}
+
+inline rocblas_status rocsolver_trtri(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_fill uplo,
+                                      rocblas_diagonal diag,
+                                      int64_t n,
+                                      float* const A[],
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      int64_t* info,
+                                      int64_t bc)
+{
+    return rocsolver_strtri_batched_64(handle, uplo, diag, n, A, lda, info, bc);
+}
+
+inline rocblas_status rocsolver_trtri(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_fill uplo,
+                                      rocblas_diagonal diag,
+                                      int64_t n,
+                                      double* const A[],
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      int64_t* info,
+                                      int64_t bc)
+{
+    return rocsolver_dtrtri_batched_64(handle, uplo, diag, n, A, lda, info, bc);
+}
+
+inline rocblas_status rocsolver_trtri(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_fill uplo,
+                                      rocblas_diagonal diag,
+                                      int64_t n,
+                                      rocblas_float_complex* const A[],
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      int64_t* info,
+                                      int64_t bc)
+{
+    return rocsolver_ctrtri_batched_64(handle, uplo, diag, n, A, lda, info, bc);
+}
+
+inline rocblas_status rocsolver_trtri(bool STRIDED,
+                                      rocblas_handle handle,
+                                      rocblas_fill uplo,
+                                      rocblas_diagonal diag,
+                                      int64_t n,
+                                      rocblas_double_complex* const A[],
+                                      int64_t lda,
+                                      rocblas_stride stA,
+                                      int64_t* info,
+                                      int64_t bc)
+{
+    return rocsolver_ztrtri_batched_64(handle, uplo, diag, n, A, lda, info, bc);
 }
 /********************************************************/
 
