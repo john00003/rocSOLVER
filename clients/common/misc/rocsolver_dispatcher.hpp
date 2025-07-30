@@ -267,9 +267,12 @@ class rocsolver_dispatcher
             {"gesvdx_batched", testing_gesvdx<true, true, T>},
             {"gesvdx_strided_batched", testing_gesvdx<false, true, T>},
             // trtri
-            {"trtri", testing_trtri<false, false, T>},
-            {"trtri_batched", testing_trtri<true, true, T>},
-            {"trtri_strided_batched", testing_trtri<false, true, T>},
+            {"trtri", testing_trtri<false, false, T, rocblas_int>},
+            {"trtri_batched", testing_trtri<true, true, T, rocblas_int>},
+            {"trtri_strided_batched", testing_trtri<false, true, T, rocblas_int>},
+            {"trtri_64", testing_trtri<false, false, T, int64_t>},
+            {"trtri_batched_64", testing_trtri<true, true, T, int64_t>},
+            {"trtri_strided_batched_64", testing_trtri<false, true, T, int64_t>},
             // getri
             {"getri", testing_getri<false, false, T>},
             {"getri_batched", testing_getri<true, true, T>},
