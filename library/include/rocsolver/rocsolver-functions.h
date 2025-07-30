@@ -25078,6 +25078,46 @@ ROCSOLVER_EXPORT rocblas_status rocsolver_ztrtri_strided_batched(rocblas_handle 
                                                                  const rocblas_stride strideA,
                                                                  rocblas_int* info,
                                                                  const rocblas_int batch_count);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_strtri_strided_batched_64(rocblas_handle handle,
+                                                                 const rocblas_fill uplo,
+                                                                 const rocblas_diagonal diag,
+                                                                 const int64_t n,
+                                                                 float* A,
+                                                                 const int64_t lda,
+                                                                 const rocblas_stride strideA,
+                                                                 int64_t* info,
+                                                                 const int64_t batch_count);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_dtrtri_strided_batched_64(rocblas_handle handle,
+                                                                 const rocblas_fill uplo,
+                                                                 const rocblas_diagonal diag,
+                                                                 const int64_t n,
+                                                                 double* A,
+                                                                 const int64_t lda,
+                                                                 const rocblas_stride strideA,
+                                                                 int64_t* info,
+                                                                 const int64_t batch_count);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_ctrtri_strided_batched_64(rocblas_handle handle,
+                                                                 const rocblas_fill uplo,
+                                                                 const rocblas_diagonal diag,
+                                                                 const int64_t n,
+                                                                 rocblas_float_complex* A,
+                                                                 const int64_t lda,
+                                                                 const rocblas_stride strideA,
+                                                                 int64_t* info,
+                                                                 const int64_t batch_count);
+
+ROCSOLVER_EXPORT rocblas_status rocsolver_ztrtri_strided_batched_64(rocblas_handle handle,
+                                                                 const rocblas_fill uplo,
+                                                                 const rocblas_diagonal diag,
+                                                                 const int64_t n,
+                                                                 rocblas_double_complex* A,
+                                                                 const int64_t lda,
+                                                                 const rocblas_stride strideA,
+                                                                 int64_t* info,
+                                                                 const int64_t batch_count);
 //! @}
 
 /*! @{
