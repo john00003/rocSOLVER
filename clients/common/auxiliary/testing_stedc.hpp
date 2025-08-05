@@ -233,6 +233,67 @@ void stedc_toeplitz_initData(const rocblas_handle handle,
     }
 }
 
+// Creates an `n` by `n` identity matrix.
+//
+template <bool CPU, bool GPU, typename T, typename Sd, typename Td, typename Ud, typename Sh, typename Th, typename Uh>
+void stedc_identity_initData(const rocblas_handle handle,
+                             const rocblas_evect evect,
+                             const rocblas_int n,
+                             Sd& dD,
+                             Sd& dE,
+                             Td& dC,
+                             const rocblas_int ldc,
+                             Ud& /* dInfo */,
+                             Sh& hD,
+                             Sh& hE,
+                             Th& hC,
+                             Uh& /* hInfo */)
+{
+    using S = decltype(std::real(T{}));
+    rocblas_int bc = 1;
+
+    if(CPU)
+    {
+        rocblas_init<T>(hC, true);
+
+        for(rocblas_int b = 0; b < bc; ++b)
+        {
+            // New matrix initialization
+            using HMatT = HostMatrix<T, rocblas_int>;
+            using HMatS = HostMatrix<S, rocblas_int>;
+            using BDesc = typename HMatT::BlockDescriptor;
+
+            auto hCw = HMatT::Wrap(hC[b], ldc, n);
+            hCw->set_to_zero();
+            auto hDw = HMatS::Wrap(hD[b], n, 1);
+            hDw->set_to_zero();
+            auto hEw = HMatS::Wrap(hE[b], n, 1);
+            hEw->set_to_zero();
+
+            if(hCw && hDw && hEw) // update matrices if n >= 1
+            {
+                auto C = HMatT::Eye(n, n);
+                auto D = HMatS::Ones(n, 1);
+                auto E = HMatS::Zeros(n - 1, 1);
+
+                hCw->copy_data_from(C);
+                hDw->copy_data_from(D);
+                hEw->copy_data_from(E);
+            }
+        }
+    }
+
+    if(GPU)
+    {
+        // now copy to the GPU
+        CHECK_HIP_ERROR(dD.transfer_from(hD));
+        CHECK_HIP_ERROR(dE.transfer_from(hE));
+
+        if(evect == rocblas_evect_original)
+            CHECK_HIP_ERROR(dC.transfer_from(hC));
+    }
+}
+
 // Creates an `n` by `n` tridiagonal, Wilkinson matrix, which is formed as follows:
 //
 // 1. If `n` is even:
@@ -589,6 +650,12 @@ void stedc_initData(const rocblas_handle handle,
         stedc_toeplitz_initData<CPU, GPU, T>(handle, evect, n, dD, dE, dC, ldc, dInfo, hD, hE, hC,
                                              hInfo);
     }
+    else if((std::getenv("TEST_IDENTITY") != nullptr)
+            || (std::getenv("STEDC_TEST_IDENTITY") != nullptr))
+    {
+        stedc_identity_initData<CPU, GPU, T>(handle, evect, n, dD, dE, dC, ldc, dInfo, hD, hE, hC,
+                                             hInfo);
+    }
     else
     {
         stedc_default_initData<CPU, GPU, T>(handle, evect, n, dD, dE, dC, ldc, dInfo, hD, hE, hC,
@@ -673,8 +740,8 @@ void stedc_getError(const rocblas_handle handle,
     auto AorT = HMatT::Empty();
     if((evect != rocblas_evect_none) && (n > 0))
     {
-        auto C = HMatT::Wrap(hC[0], ldc, n)->block(BDescT().nrows(n).ncols(n));
-        auto d = HMatT::Convert(hD[0], 1, n)->block(BDescT().nrows(1).ncols(n));
+        auto C = HMatT::Wrap(hCRes[0], ldc, n)->block(BDescT().nrows(n).ncols(n));
+        auto d = HMatT::Convert(hDRes[0], 1, n)->block(BDescT().nrows(1).ncols(n));
         auto D = HMatT::Zeros(n, n).diag(d);
         AorT = C * D * adjoint(C);
     }
@@ -707,13 +774,11 @@ void stedc_getError(const rocblas_handle handle,
             /* std::cout << "--- Computed eigenvalues: " << std::endl; */
             /* d.print(); */
 
-            auto OE = C * adjoint(C) - HMatT::Eye(n, n);
+            auto OE = adjoint(C) * C - HMatT::Eye(n, n);
             err = OE.max_col_norm();
-            /* std::cout << "--- Orthogonal error: " << err << std::endl; */
-            *max_errv = err > *max_err ? err : *max_err;
+            *max_err = err > *max_err ? err : *max_err;
 
             auto AE = AorT - C * D * adjoint(C);
-            /* std::cout << "--- Residual error: " << err << std::endl; */
             err = AE.norm() / AorT.norm();
             *max_err = err > *max_err ? err : *max_err;
 
