@@ -92,6 +92,14 @@ ROCSOLVER_BEGIN_NAMESPACE
         }                                                                                           \
         hipLaunchKernelGGL((name), __VA_ARGS__);                                                    \
     } while(0)
+#define ROCSOLVER_LOG_MATRIX(name, m, n, matrix)                                                    \
+    do                                                                                              \
+    {                                                                                               \
+        if(rocsolver_logger::is_logging_enabled())                                                  \
+        {                                                                                           \
+            rocsolver_logger::instance()->log_matrix<T>(handle, #name, #m, #n, #matrix);            \
+        }                                                                                           \
+    } while(0)
 
 /***************************************************************************
  * The rocsolver_log_entry struct records function data for trace and
@@ -169,6 +177,7 @@ private:
     std::ostream* trace_os;
     std::ostream* bench_os;
     std::ostream* profile_os;
+    std::ostream* matrix_os;
     std::forward_list<std::ofstream> file_streams;
     std::string trace_str;
 
@@ -352,6 +361,27 @@ public:
 
         if(profile_enabled)
             log_profile<T>(handle, entry);
+    }
+
+    // logging function to log matrices stored on the device before or after a kernel call
+    template <typename T>
+    void log_matrix(rocblas_handle handle, const char* func_name, T m, T n, T* matrix){
+        // assumes that matrix is stored in column major order
+        T matrix_size = m * n * sizeof(*matrix);    // simple size calculation. does not account for any reduced storage methods.
+        T host_matrix[m*n];
+
+        HIP_CHECK(hipMemcpy(host_matrix, matrix, matrix_size, hipMemcpyDeviceToHost));
+
+        for (I i=0; i<m; i++){
+            for (I j=0; j<n; j++){
+                matrix_os << host_matrix[i*m + j];
+            }
+        }
+
+        *matrix_os << matrix_str;
+        matrix_str.clear();
+        matrix_os->flush();
+
     }
 
     /***************************************************************************
