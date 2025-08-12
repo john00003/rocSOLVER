@@ -203,6 +203,7 @@ rocblas_status rocsolver_log_begin_impl()
     logger->trace_os = logger->open_log_stream("ROCSOLVER_LOG_TRACE_PATH");
     logger->bench_os = logger->open_log_stream("ROCSOLVER_LOG_BENCH_PATH");
     logger->profile_os = logger->open_log_stream("ROCSOLVER_LOG_PROFILE_PATH");
+    logger->matrix_os = logger->open_log_stream("ROCSOLVER_LOG_MATRIX_PATH");
     if(logger->trace_os->good() && logger->bench_os->good() && logger->profile_os->good())
         return rocblas_status_success;
     else

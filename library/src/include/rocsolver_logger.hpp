@@ -92,12 +92,12 @@ ROCSOLVER_BEGIN_NAMESPACE
         }                                                                                           \
         hipLaunchKernelGGL((name), __VA_ARGS__);                                                    \
     } while(0)
-#define ROCSOLVER_LOG_MATRIX(name, m, n, matrix)                                                    \
+#define ROCSOLVER_LOG_MATRIX(name, LOG_m, LOG_n, LOG_ld, LOG_matrix)                                                    \
     do                                                                                              \
     {                                                                                               \
         if(rocsolver_logger::is_logging_enabled())                                                  \
         {                                                                                           \
-            rocsolver_logger::instance()->log_matrix<T>(handle, #name, #m, #n, #matrix);            \
+            rocsolver_logger::instance()->log_matrix(handle, #name, LOG_m, LOG_n, LOG_ld, LOG_matrix);              \
         }                                                                                           \
     } while(0)
 
@@ -364,22 +364,20 @@ public:
     }
 
     // logging function to log matrices stored on the device before or after a kernel call
-    template <typename T>
-    void log_matrix(rocblas_handle handle, const char* func_name, T m, T n, T* matrix){
+    template <typename T, typename I>
+    void log_matrix(rocblas_handle handle, const char* func_name, T m, T n, T ld, I matrix){
         // assumes that matrix is stored in column major order
-        T matrix_size = m * n * sizeof(*matrix);    // simple size calculation. does not account for any reduced storage methods.
-        T host_matrix[m*n];
+        T matrix_size = ld * n * sizeof(*matrix);    // simple size calculation. does not account for any reduced storage methods.
+        I host_matrix[ld*n];
 
         HIP_CHECK(hipMemcpy(host_matrix, matrix, matrix_size, hipMemcpyDeviceToHost));
 
-        for (I i=0; i<m; i++){
-            for (I j=0; j<n; j++){
-                matrix_os << host_matrix[i*m + j];
+        for (T j=0; j<m; j++){
+            for (T i=0; i<n; i++){
+                *matrix_os += host_matrix[j*ld + i];
             }
         }
 
-        *matrix_os << matrix_str;
-        matrix_str.clear();
         matrix_os->flush();
 
     }
