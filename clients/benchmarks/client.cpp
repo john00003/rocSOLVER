@@ -679,7 +679,6 @@ try
 
     // prepare logging infrastructure and ignore environment variables
     rocsolver_log_begin();
-    rocsolver_log_set_layer_mode(rocblas_layer_mode_none);
 
     // select and dispatch function test/benchmark
     rocsolver_dispatcher::invoke(function, precision, argus);
