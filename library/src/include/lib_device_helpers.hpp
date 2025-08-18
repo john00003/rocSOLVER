@@ -28,6 +28,7 @@
 #pragma once
 
 #include <hip/hip_runtime.h>
+#include <assert.h>
 
 #include "ideal_sizes.hpp"
 #include "lib_macros.hpp"
