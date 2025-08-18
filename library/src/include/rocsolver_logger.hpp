@@ -28,6 +28,8 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <cerrno>
+#include <iostream>
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
 #include <forward_list>
@@ -368,22 +370,33 @@ public:
     template <typename T, typename I>
     void log_matrix(rocblas_handle handle, const char* func_name, T m, T n, T ld, I matrix){
         // assumes that matrix is stored in column major order
+        using ValueType = std::remove_const_t<std::remove_pointer_t<I>>;
         T matrix_size = ld * n * sizeof(*matrix);    // simple size calculation. does not account for any reduced storage methods.
-        I host_matrix[ld*n];
+        std::vector<ValueType> host_matrix(ld*n);
 
-        *matrix_os << ld;
-        *matrix_os << n;
-        *matrix_os << sizeof(*matrix);
-        *matrix_os << typeid(matrix).name();
-        *matrix_os << typeid(*matrix).name();
+        std::cerr << "Does this work?";
+        *matrix_os << "Hello World!";
+        *matrix_os << ld << "\n";
+        *matrix_os << n << "\n";
+        *matrix_os << sizeof(*matrix) << "\n";
+        *matrix_os << typeid(matrix).name() << "\n";
+        *matrix_os << typeid(*matrix).name() << "\n";
 
-        hipMemcpy(host_matrix, matrix, matrix_size, hipMemcpyDeviceToHost);
-
+        hipMemcpy(host_matrix.data(), matrix, matrix_size, hipMemcpyDeviceToHost);
+        *matrix_os << "[ ";
+        /*
         for (T j=0; j<m; j++){
             for (T i=0; i<n; i++){
-                *matrix_os << host_matrix[j*ld + i];
+                *matrix_os << host_matrix[j*ld + i] << " ";
             }
+            *matrix_os << "\n";
         }
+        */
+        for (const auto& num: host_matrix) {
+            *matrix_os << num << " ";
+        }
+
+        *matrix_os << "]";
 
         matrix_os->flush();
 
