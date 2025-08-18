@@ -37,6 +37,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+#include <typeinfo>
 
 #include "common_host_helpers.hpp"
 #include "lib_host_helpers.hpp"
@@ -370,11 +371,17 @@ public:
         T matrix_size = ld * n * sizeof(*matrix);    // simple size calculation. does not account for any reduced storage methods.
         I host_matrix[ld*n];
 
-        HIP_CHECK(hipMemcpy(host_matrix, matrix, matrix_size, hipMemcpyDeviceToHost));
+        *matrix_os << ld;
+        *matrix_os << n;
+        *matrix_os << sizeof(*matrix);
+        *matrix_os << typeid(matrix).name();
+        *matrix_os << typeid(*matrix).name();
+
+        hipMemcpy(host_matrix, matrix, matrix_size, hipMemcpyDeviceToHost);
 
         for (T j=0; j<m; j++){
             for (T i=0; i<n; i++){
-                *matrix_os += host_matrix[j*ld + i];
+                *matrix_os << host_matrix[j*ld + i];
             }
         }
 
