@@ -95,12 +95,12 @@ ROCSOLVER_BEGIN_NAMESPACE
         }                                                                                           \
         hipLaunchKernelGGL((name), __VA_ARGS__);                                                    \
     } while(0)
-#define ROCSOLVER_LOG_MATRIX(name, LOG_m, LOG_n, LOG_ld, LOG_matrix)                                                    \
+#define ROCSOLVER_LOG_MATRIX(name, LOG_m, LOG_n, LOG_ld, LOG_matrix, LOG_T)                                                    \
     do                                                                                              \
     {                                                                                               \
         if(rocsolver_logger::is_logging_enabled())                                                  \
         {                                                                                           \
-            rocsolver_logger::instance()->log_matrix(handle, #name, LOG_m, LOG_n, LOG_ld, LOG_matrix);              \
+            rocsolver_logger::instance()->log_matrix<LOG_T>(handle, #name, LOG_m, LOG_n, LOG_ld, LOG_matrix);              \
         }                                                                                           \
     } while(0)
 
@@ -183,6 +183,7 @@ private:
     std::ostream* matrix_os;
     std::forward_list<std::ofstream> file_streams;
     std::string trace_str;
+    std::string matrix_str;
 
     // returns a unique_ptr to a file stream or a given default stream
     std::ostream* open_log_stream(const char* environment_variable);
@@ -367,12 +368,12 @@ public:
     }
 
     // logging function to log matrices stored on the device before or after a kernel call
-    template <typename T, typename I>
+    template <typename U, typename T, typename I>
     void log_matrix(rocblas_handle handle, const char* func_name, T m, T n, T ld, I matrix){
         // assumes that matrix is stored in column major order
         using ValueType = std::remove_const_t<std::remove_pointer_t<I>>;
         T matrix_size = ld * n * sizeof(*matrix);    // simple size calculation. does not account for any reduced storage methods.
-        std::vector<ValueType> host_matrix(ld*n);
+        std::vector<U> host_matrix(ld*n);
 
         std::cerr << "Does this work?";
         *matrix_os << "Hello World!";
@@ -393,7 +394,8 @@ public:
         }
         */
         for (const auto& num: host_matrix) {
-            *matrix_os << num << " ";
+            matrix_str = fmt::format("{} ", num);
+            *matrix_os << matrix_str;
         }
 
         *matrix_os << "]";
