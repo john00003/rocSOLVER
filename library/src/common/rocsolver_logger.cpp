@@ -75,7 +75,7 @@ std::ostream* rocsolver_logger::open_log_stream(const char* environment_variable
         std::ostream& os = file_streams.front();
 
         // print version info only once per file
-        if(&os != trace_os && &os != bench_os && &os != profile_os && &os != matrix_os)
+        if(&os != trace_os && &os != bench_os && &os != profile_os && &os != matrix_os && &os != special_os)
         {
             fmt::print(os,
                        "ROCSOLVER LOG FILE\n"
@@ -204,7 +204,8 @@ rocblas_status rocsolver_log_begin_impl()
     logger->bench_os = logger->open_log_stream("ROCSOLVER_LOG_BENCH_PATH");
     logger->profile_os = logger->open_log_stream("ROCSOLVER_LOG_PROFILE_PATH");
     logger->matrix_os = logger->open_log_stream("ROCSOLVER_LOG_MATRIX_PATH");
-    if(logger->trace_os->good() && logger->bench_os->good() && logger->profile_os->good() && logger->matrix_os->good())
+    logger->special_os = logger->open_log_stream("ROCSOLVER_LOG_SPECIAL_PATH");
+    if(logger->trace_os->good() && logger->bench_os->good() && logger->profile_os->good() && logger->matrix_os->good() && logger->special_os->good())
         return rocblas_status_success;
     else
         return rocblas_status_internal_error;

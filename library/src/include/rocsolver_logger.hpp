@@ -103,6 +103,14 @@ ROCSOLVER_BEGIN_NAMESPACE
             rocsolver_logger::instance()->log_matrix<LOG_T>(handle, #name, LOG_m, LOG_n, LOG_ld, LOG_matrix);              \
         }                                                                                           \
     } while(0)
+#define ROCSOLVER_ENTER_SPECIAL(name, ...)                                                              \
+    do                                                                                          \
+    {                                                                                           \
+        if(rocsolver_logger::is_logging_enabled())                                              \
+        {                                                                                       \
+            rocsolver_logger::instance()->log_enter_special<T>(handle, "rocsolver", name, __VA_ARGS__); \
+        }                                                                                       \
+    } while(0)
 
 /***************************************************************************
  * The rocsolver_log_entry struct records function data for trace and
@@ -181,9 +189,11 @@ private:
     std::ostream* bench_os;
     std::ostream* profile_os;
     std::ostream* matrix_os;
+    std::ostream* special_os;
     std::forward_list<std::ofstream> file_streams;
     std::string trace_str;
     std::string matrix_str;
+    std::string special_str;
 
     // returns a unique_ptr to a file stream or a given default stream
     std::ostream* open_log_stream(const char* environment_variable);
@@ -352,6 +362,33 @@ public:
 
         if(trace_enabled)
             log_trace<T>(entry.level, func_prefix, func_name, rocsolver_make_logvalue(args)...);
+    }
+
+    // special logging function that prints arguments to a special ostream
+    template <typename T, typename... Ts>
+    void log_enter_special(rocblas_handle handle, const char* func_prefix, const char* func_name, Ts... args)
+    {
+        constexpr int shift_width = 4;
+        int indent_level = 0;
+        int indent = shift_width * indent_level;
+
+        if(sizeof...(Ts) > 0)
+        {
+            std::string pairs;
+            pairs_to_string(pairs, ", ", args...);
+
+            special_str += fmt::format("{: <{}}{} ({})\n", "", indent,
+                                     get_template_name(func_prefix, func_name), pairs);
+        }
+        else
+        {
+            special_str
+                += fmt::format("{: <{}}{}\n", "", indent, get_template_name(func_prefix, func_name));
+        }
+
+        *special_os << special_str;
+        special_str.clear();
+        special_os->flush();
     }
 
     // logging function to be called before exiting a sub-level (i.e. template) function
