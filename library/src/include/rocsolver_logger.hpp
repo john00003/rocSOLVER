@@ -375,7 +375,7 @@ public:
         if(sizeof...(Ts) > 0)
         {
             std::string pairs;
-            pairs_to_string(pairs, ", ", args...);
+            pairs_to_string(pairs, ", ", rocsolver_make_logvalue(args)...);
 
             special_str += fmt::format("{: <{}}{} ({})\n", "", indent,
                                      get_template_name(func_prefix, func_name), pairs);
