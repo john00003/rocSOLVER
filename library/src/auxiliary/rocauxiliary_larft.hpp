@@ -619,9 +619,11 @@ rocblas_status rocsolver_larft_template(rocblas_handle handle,
 
             ROCSOLVER_ENTER_SPECIAL("larft", "storev:", storev, "n:", u1_n, "k:", k,
                             "shiftV:", shiftV, "ldv:", ldv, "strideV:", strideV, "strideT:", strideT, "ldf:", ldf, "strideF:", strideF);
+            ROCSOLVER_LOG_MATRIX("before larft launch", u1_n, u1_n, ldf, F, T);
             ROCSOLVER_LAUNCH_KERNEL(larft_kernel_forward, dim3(1, batch_count), dim3(BS1, 1),
                                     lmemsize, stream, storev, u1_n, k, V, shiftV, ldv, strideV, tau,
                                     strideT, F, ldf, strideF);
+            ROCSOLVER_LOG_MATRIX("after larft launch", u1_n, u1_n, ldf, F, T);
         }
         else
         {
