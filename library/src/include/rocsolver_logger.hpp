@@ -371,28 +371,14 @@ public:
     template <typename U, typename T, typename I>
     void log_matrix(rocblas_handle handle, const char* func_name, T m, T n, T ld, I matrix){
         // assumes that matrix is stored in column major order
-        using ValueType = std::remove_const_t<std::remove_pointer_t<I>>;
+        // assume that leading dimension == m, or else transfers irrelevant data
+        // assume we are not in the batched or strided batched case (assumes U is simply a pointer to the matrix data)
         T matrix_size = ld * n * sizeof(*matrix);    // simple size calculation. does not account for any reduced storage methods.
         std::vector<U> host_matrix(ld*n);
 
-        std::cerr << "Does this work?";
-        *matrix_os << "Hello World!";
-        *matrix_os << ld << "\n";
-        *matrix_os << n << "\n";
-        *matrix_os << sizeof(*matrix) << "\n";
-        *matrix_os << typeid(matrix).name() << "\n";
-        *matrix_os << typeid(*matrix).name() << "\n";
-
         hipMemcpy(host_matrix.data(), matrix, matrix_size, hipMemcpyDeviceToHost);
         *matrix_os << "[ ";
-        /*
-        for (T j=0; j<m; j++){
-            for (T i=0; i<n; i++){
-                *matrix_os << host_matrix[j*ld + i] << " ";
-            }
-            *matrix_os << "\n";
-        }
-        */
+
         for (const auto& num: host_matrix) {
             matrix_str = fmt::format("{} ", num);
             *matrix_os << matrix_str;
@@ -401,7 +387,6 @@ public:
         *matrix_os << "]";
 
         matrix_os->flush();
-
     }
 
     /***************************************************************************
