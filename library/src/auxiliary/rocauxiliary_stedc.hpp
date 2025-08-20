@@ -2740,10 +2740,38 @@ rocblas_status rocsolver_stedc_template(rocblas_handle handle,
                                     ldc, strideC, tempgemm);
         }
 
+        hipEvent_t sort_events[2];
+        std::string event_names[1];
+        for(int i = 0; i < 2; i++)
+            HIP_CHECK(hipEventCreate(&sort_events[i]));
+
+        int num_events = 0;
         // finally sort eigenvalues and eigenvectors
+        HIP_CHECK(hipEventRecord(sort_events[num_events], stream));
+        event_names[num_events] = "stedc_sort_kernel";
+        num_events++;
         ROCSOLVER_LAUNCH_KERNEL((stedc_sort<T>), dim3(1, 1, batch_count), dim3(BS1), 0, stream, n,
                                 D + shiftD, strideD, C, shiftC, ldc, strideC, batch_count,
                                 splits_map);
+        HIP_CHECK(hipEventRecord(sort_events[num_events], stream));
+        num_events++;
+
+        HIP_CHECK(hipStreamSynchronize(stream));
+
+        if(rocsolver_profile_messages)
+        {
+            for(int i = 0; i < num_events - 1; i++)
+            {
+                float elapsed_time = 0;
+                HIP_CHECK(
+                    hipEventElapsedTime(&elapsed_time, sort_events[i], sort_events[i + 1]));
+
+                printf("\t%-41s: %f\n", event_names[i].c_str(), elapsed_time);
+            }
+            fflush(stdout);
+        }
+        for(int i = 0; i < 2; i++)
+            HIP_CHECK(hipEventDestroy(sort_events[i]));
 
         rocblas_set_pointer_mode(handle, old_mode);
     }
