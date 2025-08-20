@@ -31,8 +31,11 @@
 
 #include "lapack/roclapack_syevj_heevj.hpp"
 #include "lapack_device_functions.hpp"
+#include "auxiliary/rocauxiliary_stedc.hpp"
 #include "rocblas.hpp"
 #include "rocsolver/rocsolver.h"
+
+#include "rocprim/rocprim.hpp"
 
 ROCSOLVER_BEGIN_NAMESPACE
 
