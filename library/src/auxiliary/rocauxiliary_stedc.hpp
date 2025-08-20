@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <rocprim/rocprim.hpp>
 
 ROCSOLVER_BEGIN_NAMESPACE
 
@@ -2095,19 +2096,96 @@ ROCSOLVER_KERNEL void __launch_bounds__(STEDC_BDIM)
     }
 }
 
+template <typename S>
+ROCSOLVER_KERNEL void __launch_bounds__(BS1) stedc_prep_sort(const rocblas_int n,
+                                                             const rocblas_int batch_count,
+                                                             S* DD,
+                                                             const rocblas_stride strideD,
+                                                             S* tmpD,
+                                                             rocblas_int* mmap,
+                                                             rocblas_int* offsets)
+{
+    // -----------------------------------
+    // use z-grid dimension as batch index
+    // -----------------------------------
+    rocblas_int bid_start = hipBlockIdx_z;
+    rocblas_int bid_inc = hipGridDim_z;
 
-/** STEDC_SORT sorts computed eigenvalues and eigenvectors in increasing order **/
-template <typename T, typename S, typename U>
-ROCSOLVER_KERNEL void __launch_bounds__(BS1) stedc_sort(const rocblas_int n,
-                                                        S* DD,
-                                                        const rocblas_stride strideD,
-                                                        U CC,
-                                                        const rocblas_int shiftC,
-                                                        const rocblas_int ldc,
-                                                        const rocblas_stride strideC,
-                                                        const rocblas_int batch_count,
-                                                        rocblas_int* work,
-                                                        rocblas_int* nev = nullptr)
+    int gid = hipThreadIdx_x + hipBlockIdx_x * hipBlockDim_x;
+    int dim = hipBlockDim_x * hipGridDim_x;
+
+    rocblas_int* const map = mmap + bid_start * ((int64_t)n);
+
+    for(auto bid = bid_start; bid < batch_count; bid += bid_inc)
+    {
+        // ---------------------------------------------
+        // select batch instance to work with
+        // (avoiding arithmetics with possible nullptrs)
+        // ---------------------------------------------
+
+        // intialize batch offset
+        if(gid == 0)
+        {
+            offsets[bid] = n * bid;
+
+            if(bid == batch_count - 1)
+            {
+                offsets[bid + 1] = n * (bid + 1);
+            }
+        }
+
+        S* D = DD + (bid * strideD);
+
+        // initialize map & tmpD
+        for(auto i = gid; i < n; i += dim)
+        {
+            map[i] = i;
+            tmpD[i + (bid * n)] = D[i];
+        }
+    }
+}
+
+template <typename S>
+ROCSOLVER_KERNEL void __launch_bounds__(BS1) stedc_copy_eval(const rocblas_int n,
+                                                             const rocblas_int batch_count,
+                                                             S* DD,
+                                                             const rocblas_stride strideD,
+                                                             S* tmpD)
+{
+    // -----------------------------------
+    // use z-grid dimension as batch index
+    // -----------------------------------
+    rocblas_int bid_start = hipBlockIdx_z;
+    rocblas_int bid_inc = hipGridDim_z;
+
+    int gid = hipThreadIdx_x + hipBlockIdx_x * hipBlockDim_x;
+    int dim = hipBlockDim_x * hipGridDim_x;
+
+    for(auto bid = bid_start; bid < batch_count; bid += bid_inc)
+    {
+        // ---------------------------------------------
+        // select batch instance to work with
+        // (avoiding arithmetics with possible nullptrs)
+        // ---------------------------------------------
+
+        S* D = DD + (bid * strideD);
+
+        // copy tmpD to D
+        for(auto i = gid; i < n; i += dim)
+        {
+            D[i] = tmpD[i + (bid * n)];
+        }
+    }
+}
+
+/** STEDC_SORT_EVAL sorts computed eigenvalues increasing order **/
+template <typename T, typename S>
+ROCSOLVER_KERNEL void __launch_bounds__(BS1) stedc_sort_eval(const rocblas_int n,
+                                                             S* DD,
+                                                             const rocblas_stride strideD,
+                                                             const rocblas_int batch_count,
+                                                             rocblas_int* mmap,
+                                                             rocblas_int* nev = nullptr)
 {
     // -----------------------------------
     // use z-grid dimension as batch index
@@ -2117,7 +2195,7 @@ ROCSOLVER_KERNEL void __launch_bounds__(BS1) stedc_sort(const rocblas_int n,
 
     int tid = hipThreadIdx_x;
 
-    rocblas_int* const map = work + bid_start * ((int64_t)n);
+    rocblas_int* const map = mmap + bid_start * ((int64_t)n);
 
     for(auto bid = bid_start; bid < batch_count; bid += bid_inc)
     {
@@ -2125,9 +2203,6 @@ ROCSOLVER_KERNEL void __launch_bounds__(BS1) stedc_sort(const rocblas_int n,
         // select batch instance to work with
         // (avoiding arithmetics with possible nullptrs)
         // ---------------------------------------------
-        T* C = nullptr;
-        if(CC)
-            C = load_ptr_batch<T>(CC, bid, shiftC, strideC);
         S* D = DD + (bid * strideD);
         rocblas_int nn;
         if(nev)
@@ -2144,9 +2219,115 @@ ROCSOLVER_KERNEL void __launch_bounds__(BS1) stedc_sort(const rocblas_int n,
         else
             selection_sort(nn, D, map);
         __syncthreads();
+    }
+}
 
-        permute_swap(n, C, ldc, map, nn);
-        __syncthreads();
+/** STEDC_SORT_EVEC sorts computed eigenvectors based on map into temp storage **/
+template <typename T, typename U>
+ROCSOLVER_KERNEL void __launch_bounds__(BS2* BS2) stedc_sort_evec(const rocblas_int n,
+                                                                  U CC,
+                                                                  const rocblas_int shiftC,
+                                                                  const rocblas_int ldc,
+                                                                  const rocblas_stride strideC,
+                                                                  T* tmpC,
+                                                                  const rocblas_int batch_count,
+                                                                  rocblas_int* mmap,
+                                                                  rocblas_int* nev = nullptr)
+{
+    // -----------------------------------
+    // use z-grid dimension as batch index
+    // -----------------------------------
+    rocblas_int bid_start = hipBlockIdx_z;
+    rocblas_int bid_inc = hipGridDim_z;
+
+    int gidx = hipThreadIdx_x + hipBlockIdx_x * hipBlockDim_x;
+    int gidy = hipThreadIdx_y + hipBlockIdx_y * hipBlockDim_y;
+
+    int dimx = hipBlockDim_x * hipGridDim_x;
+    int dimy = hipBlockDim_y * hipGridDim_y;
+
+    rocblas_int* const map = mmap + bid_start * ((int64_t)n);
+
+    rocblas_int ldd = n;
+    rocblas_stride strideD = n * n;
+
+    if(!CC)
+        return;
+
+    for(auto bid = bid_start; bid < batch_count; bid += bid_inc)
+    {
+        // ---------------------------------------------
+        // select batch instance to work with
+        // (avoiding arithmetics with possible nullptrs)
+        // ---------------------------------------------
+        T* C = load_ptr_batch<T>(CC, bid, shiftC, strideC);
+        T* dest = tmpC + (bid * strideD);
+        rocblas_int nn;
+        if(nev)
+            nn = nev[bid];
+        else
+            nn = n;
+
+        for(auto j = gidy; j < nn; j += dimy)
+        {
+            for(auto i = gidx; i < n; i += dimx)
+            {
+                dest[i + j * ldd] = C[i + map[j] * ldc];
+            }
+        }
+    }
+}
+
+/** STEDC_COPY_EVEC copies eigenvectors in to C from temp storage **/
+template <typename T, typename U>
+ROCSOLVER_KERNEL void __launch_bounds__(BS2* BS2) stedc_copy_evec(const rocblas_int n,
+                                                                  U CC,
+                                                                  const rocblas_int shiftC,
+                                                                  const rocblas_int ldc,
+                                                                  const rocblas_stride strideC,
+                                                                  T* tmpC,
+                                                                  const rocblas_int batch_count,
+                                                                  rocblas_int* nev = nullptr)
+{
+    // -----------------------------------
+    // use z-grid dimension as batch index
+    // -----------------------------------
+    rocblas_int bid_start = hipBlockIdx_z;
+    rocblas_int bid_inc = hipGridDim_z;
+
+    int gidx = hipThreadIdx_x + hipBlockIdx_x * hipBlockDim_x;
+    int gidy = hipThreadIdx_y + hipBlockIdx_y * hipBlockDim_y;
+
+    int dimx = hipBlockDim_x * hipGridDim_x;
+    int dimy = hipBlockDim_y * hipGridDim_y;
+
+    rocblas_int ldd = n;
+    rocblas_stride strideD = n * n;
+
+    if(!CC)
+        return;
+
+    for(auto bid = bid_start; bid < batch_count; bid += bid_inc)
+    {
+        // ---------------------------------------------
+        // select batch instance to work with
+        // (avoiding arithmetics with possible nullptrs)
+        // ---------------------------------------------
+        T* C = load_ptr_batch<T>(CC, bid, shiftC, strideC);
+        T* dest = tmpC + (bid * strideD);
+        rocblas_int nn;
+        if(nev)
+            nn = nev[bid];
+        else
+            nn = n;
+
+        for(auto j = gidy; j < nn; j += dimy)
+        {
+            for(auto i = gidx; i < n; i += dimx)
+            {
+                C[i + j * ldc] = dest[i + j * ldd];
+            }
+        }
     }
 }
 
@@ -2225,7 +2406,15 @@ void rocsolver_stedc_getMemorySize(const rocblas_evect evect,
     else
     {
         // requirements for solver of small independent blocks
-        rocsolver_steqr_getMemorySize<T, S>(evect, n, batch_count, size_work_stack);
+        size_t w1, w2;
+        rocsolver_steqr_getMemorySize<T, S>(evect, n, batch_count, &w1);
+
+        auto status = rocprim::segmented_radix_sort_pairs(
+            nullptr, w2, (S*)nullptr, (S*)nullptr, (rocblas_int*)nullptr, (rocblas_int*)nullptr,
+            n * batch_count, batch_count, (rocblas_int*)nullptr, (rocblas_int*)nullptr, 0,
+            8 * sizeof(S), 0, false);
+
+        *size_work_stack = std::max(w1, w2);
 
         // extra requirements for original eigenvectors of small independent blocks
         if(evect != rocblas_evect_tridiagonal)
@@ -2315,6 +2504,8 @@ rocblas_status rocsolver_stedc_template(rocblas_handle handle,
         return rocblas_status_success;
 
     auto const splits_map = splits;
+    auto const splits_map_out = splits_map + n * batch_count;
+    auto const sort_offsets = splits_map_out + n * batch_count;
 
     hipStream_t stream;
     rocblas_get_stream(handle, &stream);
@@ -2532,9 +2723,33 @@ rocblas_status rocsolver_stedc_template(rocblas_handle handle,
         }
 
         // finally sort eigenvalues and eigenvectors
-        ROCSOLVER_LAUNCH_KERNEL((stedc_sort<T>), dim3(1, 1, batch_count), dim3(BS1), 0, stream, n,
-                                D + shiftD, strideD, C, shiftC, ldc, strideC, batch_count,
-                                splits_map);
+        ROCSOLVER_LAUNCH_KERNEL((stedc_prep_sort), dim3(((n - 1) / BS1 + 1), 1, batch_count),
+                                dim3(BS1), 0, stream, n, batch_count, D + shiftD, strideD, tmpz,
+                                splits_map, sort_offsets);
+
+        // Get required size of the temporary storage
+        size_t temporary_storage_size_bytes = 0;
+        HIP_CHECK(rocprim::segmented_radix_sort_pairs(
+            nullptr, temporary_storage_size_bytes, (S*)nullptr, (S*)nullptr, (rocblas_int*)nullptr,
+            (rocblas_int*)nullptr, n * batch_count, batch_count, (rocblas_int*)nullptr,
+            (rocblas_int*)nullptr, 0, 8 * sizeof(S), 0, false));
+
+        HIP_CHECK(rocprim::segmented_radix_sort_pairs(
+            work_stack, temporary_storage_size_bytes, tmpz, tmpz + (n * batch_count), splits_map,
+            splits_map_out, n * batch_count, batch_count, sort_offsets, sort_offsets + 1, 0,
+            8 * sizeof(S), stream, false));
+
+        ROCSOLVER_LAUNCH_KERNEL((stedc_copy_eval), dim3(((n - 1) / BS1 + 1), 1, batch_count),
+                                dim3(BS1), 0, stream, n, batch_count, D + shiftD, strideD,
+                                tmpz + (n * batch_count));
+
+        const auto nblocks = (n - 1) / BS2 + 1;
+        ROCSOLVER_LAUNCH_KERNEL((stedc_sort_evec<T>), dim3(nblocks, nblocks, batch_count),
+                                dim3(BS2, BS2), 0, stream, n, C, shiftC, ldc, strideC, (T*)tempgemm,
+                                batch_count, splits_map_out);
+        ROCSOLVER_LAUNCH_KERNEL((stedc_copy_evec<T>), dim3(nblocks, nblocks, batch_count),
+                                dim3(BS2, BS2), 0, stream, n, C, shiftC, ldc, strideC, (T*)tempgemm,
+                                batch_count);
 
         rocblas_set_pointer_mode(handle, old_mode);
     }
