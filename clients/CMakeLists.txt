@@ -199,3 +199,6 @@ endif()
 if(BUILD_CLIENTS_EXTRA_TESTS)
   add_subdirectory(extras)
 endif()
+
+# # Build Llamas client by default
+# add_subdirectory(llamas)

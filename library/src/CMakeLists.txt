@@ -542,3 +542,59 @@ rocm_export_targets(
   NAMESPACE roc::
 )
 
+############################################################
+# Executable for Llamas Team
+add_executable(larft-example larft_example.cpp)
+
+target_link_libraries(larft-example
+  PUBLIC
+    roc::rocsolver
+    roc::rocblas
+  PRIVATE
+    $<BUILD_INTERFACE:rocsolver-common> # https://gitlab.kitware.com/cmake/cmake/-/issues/15415
+    roc::rocprim
+    $<$<PLATFORM_ID:Linux>:--rtlib=compiler-rt>
+    $<$<PLATFORM_ID:Linux>:--unwindlib=libgcc>
+)
+if(NOT USE_HIPCXX)
+  target_link_libraries(larft-example PRIVATE hip::device)
+endif()
+
+target_include_directories(larft-example
+  PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/library/include>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/rocsolver>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Ignore loop unrolling failures
+target_compile_options(larft-example PRIVATE -Wno-pass-failed)
+
+# hipcc adds these options automatically. These options might have an effect
+# on performance, so add them when building with clang directly, just in case.
+if(USE_HIPCXX)
+  target_compile_options(larft-example PRIVATE
+    "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-early-inline-all=true>"
+    "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-function-calls=false>"
+  )
+elseif(CMAKE_CXX_COMPILER MATCHES ".*clang\\+\\+.*")
+  target_compile_options(larft-example PRIVATE
+    "SHELL:-mllvm -amdgpu-early-inline-all=true"
+    "SHELL:-mllvm -amdgpu-function-calls=false"
+  )
+endif()
+
+if(BUILD_OFFLOAD_COMPRESS)
+  target_compile_options(larft-example PRIVATE "--offload-compress")
+endif()
+
+target_compile_definitions(larft-example PRIVATE
+  ROCM_USE_FLOAT16
+  ROCBLAS_INTERNAL_API
+  ROCSOLVER_LIBRARY
+)
+
