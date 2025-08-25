@@ -45,7 +45,7 @@ void read_matrix(const char* filename, std::vector<float>& V, std::vector<float>
 
 
 int main(int argc, char* argv[]){
-    // TODO: for verify mode we don't need to read in expected matrix output, we could instead just call original kernel :)
+    //
     /*
         This program should be invoked with 2 or 3 command line arguments:
             1) the path to a text file containing the input matrix

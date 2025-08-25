@@ -95,12 +95,12 @@ ROCSOLVER_BEGIN_NAMESPACE
         }                                                                                           \
         hipLaunchKernelGGL((name), __VA_ARGS__);                                                    \
     } while(0)
-#define ROCSOLVER_LOG_MATRIX(name, LOG_m, LOG_n, LOG_ld, LOG_matrix, LOG_T)                                                    \
+#define ROCSOLVER_LOG_MATRIX(name, LOG_n, LOG_ld, LOG_matrix, LOG_T)                                                    \
     do                                                                                              \
     {                                                                                               \
         if(rocsolver_logger::is_logging_enabled())                                                  \
         {                                                                                           \
-            rocsolver_logger::instance()->log_matrix<LOG_T>(handle, #name, LOG_m, LOG_n, LOG_ld, LOG_matrix);              \
+            rocsolver_logger::instance()->log_matrix<LOG_T>(handle, #name, LOG_n, LOG_ld, LOG_matrix);              \
         }                                                                                           \
     } while(0)
 #define ROCSOLVER_ENTER_SPECIAL(name, ...)                                                              \
@@ -194,6 +194,8 @@ private:
     std::string trace_str;
     std::string matrix_str;
     std::string special_str;
+    int matrix_count = 0;
+    int special_count = 0;
 
     // returns a unique_ptr to a file stream or a given default stream
     std::ostream* open_log_stream(const char* environment_variable);
@@ -406,7 +408,7 @@ public:
 
     // logging function to log matrices stored on the device before or after a kernel call
     template <typename U, typename T, typename I>
-    void log_matrix(rocblas_handle handle, const char* func_name, T m, T n, T ld, I matrix){
+    void log_matrix(rocblas_handle handle, const char* func_name, T n, T ld, I matrix){
         // assumes that matrix is stored in column major order
         // assume that leading dimension == m, or else transfers irrelevant data
         // assume we are not in the batched or strided batched case (assumes U is simply a pointer to the matrix data)
@@ -419,6 +421,8 @@ public:
             matrix_str = fmt::format("{} ", num);
             *matrix_os << matrix_str;
         }
+
+        *matrix_os << "\n";
 
         matrix_os->flush();
     }

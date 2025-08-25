@@ -265,12 +265,10 @@ rocblas_status rocsolver_gels_template(rocblas_handle handle,
                                     dim3(1, check_threads, 1), 0, stream, n, A, shiftA, lda,
                                     strideA, info);
 
-            ROCSOLVER_LOG_MATRIX("gels before", nrhs, n, ldb, B, T);
             // save elements of B that will be overwritten in cases where info is nonzero
             ROCSOLVER_LAUNCH_KERNEL((copy_mat<T, U>), dim3(copyblocksmin, copyblocksy, batch_count),
                                     dim3(32, 32), 0, stream, copymat_to_buffer, n, nrhs, B, shiftB,
                                     ldb, strideB, ipiv_savedB, info_mask(info));
-            ROCSOLVER_LOG_MATRIX("gels after", nrhs, n, ldb, B, T);
 
             // solve RX = Q'B, overwriting B with X
             rocsolver_trsm_upper<BATCHED, STRIDED, T>(
