@@ -551,6 +551,7 @@ target_link_libraries(larft-example
     roc::rocsolver
     roc::rocblas
   PRIVATE
+    hip::host
     $<BUILD_INTERFACE:rocsolver-common> # https://gitlab.kitware.com/cmake/cmake/-/issues/15415
     roc::rocprim
     $<$<PLATFORM_ID:Linux>:--rtlib=compiler-rt>
@@ -569,6 +570,7 @@ target_include_directories(larft-example
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/common/include
 )
 
 # Ignore loop unrolling failures
