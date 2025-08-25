@@ -1561,9 +1561,9 @@ rocblas_status rocsolver_stedc_template(rocblas_handle handle,
 bool print_debug = false;
 bool print_times = true;
 
-hipEvent_t setup_events[4];
-for(int i = 0; i < 4; i++)
-    HIP_CHECK(hipEventCreate(&setup_events[i]));
+// hipEvent_t setup_events[4];
+// for(int i = 0; i < 4; i++)
+//     HIP_CHECK(hipEventCreate(&setup_events[i]));
 
 if(print_debug)
 {
@@ -1608,7 +1608,7 @@ print_device_matrix(std::cout,"E in",1,n-1,E,1);
         }
         rocblas_int groupsn = (n - 1) / BS2 + 1;
 
-HIP_CHECK(hipEventRecord(setup_events[0], stream));
+// HIP_CHECK(hipEventRecord(setup_events[0], stream));
         ROCSOLVER_LAUNCH_KERNEL(init_ident<S>, dim3(groupsn, groupsn, batch_count), dim3(BS2, BS2),
                                 0, stream, n, n, V, 0, ldv, strideV);
 
@@ -1616,37 +1616,37 @@ HIP_CHECK(hipEventRecord(setup_events[0], stream));
         //-----------------------------
         rocblas_int groups = (batch_count - 1) / STEDC_BDIM + 1;
 
-HIP_CHECK(hipEventRecord(setup_events[1], stream));
+// HIP_CHECK(hipEventRecord(setup_events[1], stream));
         ROCSOLVER_LAUNCH_KERNEL((stedc_divide_kernel<S>),
                                 dim3(groups), dim3(STEDC_BDIM), 0, stream, levs, blks, n, D + shiftD,
                                 strideD, E + shiftE, strideE, batch_count, splits);
 
         // 2. solve phase
         //-----------------------------
-HIP_CHECK(hipEventRecord(setup_events[2], stream));
+// HIP_CHECK(hipEventRecord(setup_events[2], stream));
         ROCSOLVER_LAUNCH_KERNEL((stedc_solve_kernel<S>),
                                 dim3(blks, batch_count), dim3(WAVEFRONT), 0, stream, levs, blks, 
                                 n, D + shiftD, strideD, E + shiftE, strideE, 
                                 V, 0, ldv, strideV, info, (S*)work_stack, splits, 
                                 eps, ssfmin, ssfmax);
 
-HIP_CHECK(hipEventRecord(setup_events[3], stream));
+// HIP_CHECK(hipEventRecord(setup_events[3], stream));
 
-        HIP_CHECK(hipStreamSynchronize(stream));
+        // HIP_CHECK(hipStreamSynchronize(stream));
 
-        float elapsed[3];
-        for(int i = 0; i < 3; i++)
-            HIP_CHECK(hipEventElapsedTime(&elapsed[i], setup_events[i], setup_events[i+1]));
-        for(int i = 0; i < 4; i++)
-            HIP_CHECK(hipEventDestroy(setup_events[i]));
+        // float elapsed[3];
+        // for(int i = 0; i < 3; i++)
+        //     HIP_CHECK(hipEventElapsedTime(&elapsed[i], setup_events[i], setup_events[i+1]));
+        // for(int i = 0; i < 4; i++)
+        //     HIP_CHECK(hipEventDestroy(setup_events[i]));
 
-if(print_times)
-{
-printf("\n\tinit_ident         : %f\n"
-       "\tstedc_divide_kernel: %f\n"
-       "\tstedc_solve_kernel : %f\n\n",
-       elapsed[0], elapsed[1], elapsed[2]);
-}
+// if(print_times)
+// {
+// printf("\n\tinit_ident         : %f\n"
+//        "\tstedc_divide_kernel: %f\n"
+//        "\tstedc_solve_kernel : %f\n\n",
+//        elapsed[0], elapsed[1], elapsed[2]);
+// }
 
 if(print_debug)
 {
@@ -1667,24 +1667,24 @@ print_device_matrix(std::cout,"ps",1,n,splits+2*n,1);
         for(rocblas_int k = 0; k < levs; ++k) ////////////////////////////////////////////////////////////////////////////// k < levs
         {
 
-hipEvent_t merge_events[14];            
-for(int i = 0; i < 14; i++)
-    HIP_CHECK(hipEventCreate(&merge_events[i]));
+// hipEvent_t merge_events[14];            
+// for(int i = 0; i < 14; i++)
+//     HIP_CHECK(hipEventCreate(&merge_events[i]));
 
 
             // a. prepare secular equations
-if(print_times || print_debug)
-{
-printf("------------------------------------------\n");
-printf("     start merge at level k = %d\n",k);
-printf("------------------------------------------\n\n");
-}
+// if(print_times || print_debug)
+// {
+// printf("------------------------------------------\n");
+// printf("     start merge at level k = %d\n",k);
+// printf("------------------------------------------\n\n");
+// }
 if(print_debug)
 {
 print_device_matrix(std::cout,"values to be merge-sorted",1,n,D,1);
 }
 
-HIP_CHECK(hipEventRecord(merge_events[0], stream));
+//HIP_CHECK(hipEventRecord(merge_events[0], stream));
             ROCSOLVER_LAUNCH_KERNEL((stedc_mergeSort_kernel<S>), dim3(numgrps, batch_count),
                                     dim3(STEDC_BDIM), 0, stream, levs, blks, k, n, D + shiftD, strideD,
                                     V, 0, ldv, strideV, tmpz, tempgemm, splits);
@@ -1697,7 +1697,7 @@ print_device_matrix(std::cout,"z after sort",1,n,tempgemm,1);
 print_device_matrix(std::cout,"values after sort",1,n,tempgemm+n,1);
 }
             
-HIP_CHECK(hipEventRecord(merge_events[1], stream));
+//HIP_CHECK(hipEventRecord(merge_events[1], stream));
             ROCSOLVER_LAUNCH_KERNEL((stedc_mergeDeflate_kernel<S>), dim3(1, batch_count),
                                     dim3(numthds), lmemsize, stream, levs, blks, k, n, E + shiftE, strideE,
                                     tmpz, tempgemm, splits, eps);
@@ -1714,7 +1714,7 @@ print_device_matrix(std::cout,"vecs after deflate",n,n,tempgemm,n);
 print_device_matrix(std::cout,"temps after deflate",n,n,tempgemm+n*n,n);
 }
 
-HIP_CHECK(hipEventRecord(merge_events[2], stream));
+//HIP_CHECK(hipEventRecord(merge_events[2], stream));
             ROCSOLVER_LAUNCH_KERNEL((stedc_mergePrepare_kernel<S>), dim3(groupsn, groupsn, batch_count), 
                                     dim3(BS2,BS2), 0, stream, levs, blks, k, n, E + shiftE, strideE,
                                     tmpz, tempgemm, splits, eps);
@@ -1730,7 +1730,7 @@ print_device_matrix(std::cout,"Z for secular eqns",1,n,tmpz,1);
 
 
 
-HIP_CHECK(hipEventRecord(merge_events[3], stream));
+//HIP_CHECK(hipEventRecord(merge_events[3], stream));
             ROCSOLVER_LAUNCH_KERNEL((stedc_mergeRotate_kernel<S>), dim3(n, batch_count),
                                     dim3(STEDC_BDIM),
                                     0, stream, levs, blks, k, n,
@@ -1743,12 +1743,12 @@ print_device_matrix(std::cout,"V after rotate",n,n,V,ldv);
 }
 
             // b. solve secular eq to find merged eigenvalues
-HIP_CHECK(hipEventRecord(merge_events[4], stream));
+//HIP_CHECK(hipEventRecord(merge_events[4], stream));
             ROCSOLVER_LAUNCH_KERNEL((stedc_mergeValues_kernel<S>), dim3(numgrps, batch_count),
                                     dim3(STEDC_BDIM), 0, stream, levs, blks, k, n, E + shiftE, strideE,
                                     tmpz, tempgemm, splits, eps, ssfmin, ssfmax);
 
-HIP_CHECK(hipEventRecord(merge_events[5], stream));
+//HIP_CHECK(hipEventRecord(merge_events[5], stream));
             ROCSOLVER_LAUNCH_KERNEL((stedc_mergeReinsert_kernel<S>), dim3(numgrps, batch_count),
                                     dim3(STEDC_BDIM), 0, stream, levs, blks, k, n, D + shiftD, strideD, E + shiftE, strideE,
                                     tmpz, tempgemm, splits);
@@ -1766,14 +1766,14 @@ print_device_matrix(std::cout,"temps after values",n,n,tempgemm+n*n,n);
 }
 
             // c. find merged eigenvectors
-HIP_CHECK(hipEventRecord(merge_events[6], stream));
+//HIP_CHECK(hipEventRecord(merge_events[6], stream));
             ROCSOLVER_LAUNCH_KERNEL(
                 (stedc_mergeRescale_kernel<STEDC_EXTERNAL_GEMM, S>),
                 dim3(n, blks, batch_count), dim3(STEDC_BDIM), 0, stream,
                 levs, blks, k, n, D + shiftD, strideD, E + shiftE, strideE, V, 0, ldv, strideV,
                 tmpz, tempgemm, splits);        
 
-HIP_CHECK(hipEventRecord(merge_events[7], stream));
+//HIP_CHECK(hipEventRecord(merge_events[7], stream));
             ROCSOLVER_LAUNCH_KERNEL(
                 (stedc_mergeVectors_kernel<STEDC_EXTERNAL_GEMM, S>),
                 dim3(n, batch_count), dim3(STEDC_BDIM), 0, stream, 
@@ -1796,10 +1796,10 @@ print_device_matrix(std::cout,"temps after vectors",n,n,tempgemm+n*n,n);
                 // STEDC_EXTERNAL_GEMM at run time to switch between internal vector updates and
                 // external gemm based updates.
 
-HIP_CHECK(hipEventRecord(merge_events[8], stream));
+//HIP_CHECK(hipEventRecord(merge_events[8], stream));
                 HIP_CHECK(hipMemsetAsync((void*)(tempgemm+n*n), 0, sizeof(S) * n * n, stream));
 
-HIP_CHECK(hipEventRecord(merge_events[9], stream));
+//HIP_CHECK(hipEventRecord(merge_events[9], stream));
                 ROCSOLVER_LAUNCH_KERNEL(stedc_mergePrepgemm1_kernel<S>,
                 dim3(numgrps, batch_count), dim3(STEDC_BDIM), 0, stream,
                 levs, blks, k, n, E + shiftE, strideE, tmpz, tempgemm, splits);
@@ -1809,7 +1809,7 @@ if(print_debug)
 print_device_matrix(std::cout,"temps after prepgem1",n,n,tempgemm+n*n,n);
 }
 
-HIP_CHECK(hipEventRecord(merge_events[10], stream));
+//HIP_CHECK(hipEventRecord(merge_events[10], stream));
                 ROCSOLVER_LAUNCH_KERNEL(stedc_mergePrepgemm_kernel<S>,
                 dim3(n, batch_count), dim3(STEDC_BDIM), 0, stream,
                 levs, blks, k, n, E + shiftE, strideE, tmpz, tempgemm, splits);
@@ -1820,7 +1820,7 @@ print_device_matrix(std::cout,"temps after prepgem",n,n,tempgemm+n*n,n);
 }
 
 
-HIP_CHECK(hipEventRecord(merge_events[11], stream));
+//HIP_CHECK(hipEventRecord(merge_events[11], stream));
                 rocsolver_gemm(handle, rocblas_operation_none, rocblas_operation_none, n, n, n,
                                &one, V, 0, ldv, strideV, tempgemm, n * n, n, 2 * n * n, &zero,
                                tempgemm, 0, n, 2 * n * n, batch_count, workArr);
@@ -1831,42 +1831,42 @@ print_device_matrix(std::cout,"new vectors",n,n,tempgemm,n);
             }
 
             // d. update level
-HIP_CHECK(hipEventRecord(merge_events[12], stream));
+//HIP_CHECK(hipEventRecord(merge_events[12], stream));
             ROCSOLVER_LAUNCH_KERNEL((stedc_mergeUpdate_kernel<S>),
                                     dim3(groupsn, groupsn, batch_count), dim3(BS2,BS2), 0, stream, 
                                     levs, blks, k, n, D + shiftD, strideD,
                                     V, 0, ldv, strideV, tmpz, tempgemm);
 
-HIP_CHECK(hipEventRecord(merge_events[13], stream));
+//HIP_CHECK(hipEventRecord(merge_events[13], stream));
 
-            HIP_CHECK(hipStreamSynchronize(stream));
-            float merge_elapsed[13];
+//             HIP_CHECK(hipStreamSynchronize(stream));
+//             float merge_elapsed[13];
 
-            for(int i = 0; i < 13; i++)
-                HIP_CHECK(hipEventElapsedTime(&merge_elapsed[i], merge_events[i], merge_events[i+1]));
-            for(int i = 0; i < 14; i++)
-                HIP_CHECK(hipEventDestroy(merge_events[i]));
+//             for(int i = 0; i < 13; i++)
+//                 HIP_CHECK(hipEventElapsedTime(&merge_elapsed[i], merge_events[i], merge_events[i+1]));
+//             for(int i = 0; i < 14; i++)
+//                 HIP_CHECK(hipEventDestroy(merge_events[i]));
 
-if(print_times)
-{
-            printf("\tmergeSort          : %f\n"
-                   "\tmergeDeflate       : %f\n"
-                   "\tmergePrepare       : %f\n"
-                   "\tmergeRotate        : %f\n"
-                   "\tmergeValues        : %f\n"
-                   "\tmergeReinsert      : %f\n"
-                   "\tmergeRescale       : %f\n"
-                   "\tmergeVectors       : %f\n"
-                   "\tmemset             : %f\n" 
-                   "\tmergePrepgemm1     : %f\n"
-                   "\tmergePrepgemm      : %f\n" 
-                   "\tGEMM               : %f\n"
-                   "\tmergeUpdate        : %f\n\n",
-                merge_elapsed[0], merge_elapsed[1], merge_elapsed[2], merge_elapsed[3], merge_elapsed[4], 
-                merge_elapsed[5], merge_elapsed[6], merge_elapsed[7], merge_elapsed[8], merge_elapsed[9],
-                merge_elapsed[10], merge_elapsed[11], merge_elapsed[12]);
-            fflush(stdout);
-}
+// if(print_times)
+// {
+//             printf("\tmergeSort          : %f\n"
+//                    "\tmergeDeflate       : %f\n"
+//                    "\tmergePrepare       : %f\n"
+//                    "\tmergeRotate        : %f\n"
+//                    "\tmergeValues        : %f\n"
+//                    "\tmergeReinsert      : %f\n"
+//                    "\tmergeRescale       : %f\n"
+//                    "\tmergeVectors       : %f\n"
+//                    "\tmemset             : %f\n" 
+//                    "\tmergePrepgemm1     : %f\n"
+//                    "\tmergePrepgemm      : %f\n" 
+//                    "\tGEMM               : %f\n"
+//                    "\tmergeUpdate        : %f\n\n",
+//                 merge_elapsed[0], merge_elapsed[1], merge_elapsed[2], merge_elapsed[3], merge_elapsed[4], 
+//                 merge_elapsed[5], merge_elapsed[6], merge_elapsed[7], merge_elapsed[8], merge_elapsed[9],
+//                 merge_elapsed[10], merge_elapsed[11], merge_elapsed[12]);
+//             fflush(stdout);
+// }
 
 if(print_debug)
 {
