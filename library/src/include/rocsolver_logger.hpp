@@ -376,7 +376,7 @@ public:
         int indent_level = 0;
         int indent = shift_width * indent_level;
 
-        std::ofstream curr_special_os(fmt::format("{}special_log_{}.txt", special_filepath, special_count / 3));
+        std::ofstream curr_special_os(fmt::format("{}special_log_{}.txt", special_filepath, special_count));
         std::ofstream* special_os= &curr_special_os;
 
         if(sizeof...(Ts) > 0)
@@ -416,7 +416,7 @@ public:
     // logging function to log matrices stored on the device before or after a kernel call
     template <typename U, typename T, typename I>
     void log_matrix(rocblas_handle handle, const char* func_name, T n, T ld, I matrix){
-        std::ofstream curr_matrix_os(fmt::format("{}matrix_log_{}.txt", matrix_filepath, matrix_count / 3));
+        std::ofstream curr_matrix_os(fmt::format("{}matrix_log_{}.txt", matrix_filepath, matrix_count / 3), std::ios::app);
         std::ofstream* matrix_os = &curr_matrix_os;
 
         // assumes that matrix is stored in column major order

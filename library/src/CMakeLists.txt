@@ -600,3 +600,7 @@ target_compile_definitions(larft-example PRIVATE
   ROCSOLVER_LIBRARY
 )
 
+file(COPY
+    ${CMAKE_CURRENT_SOURCE_DIR}/run_llamas.py  # Source file
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}                   # Destination directory
+)
