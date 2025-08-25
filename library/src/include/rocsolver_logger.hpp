@@ -188,14 +188,16 @@ private:
     std::ostream* trace_os;
     std::ostream* bench_os;
     std::ostream* profile_os;
-    std::ostream* matrix_os;
-    std::ostream* special_os;
+    //std::ostream* matrix_os;
+    //std::ostream* special_os;
     std::forward_list<std::ofstream> file_streams;
     std::string trace_str;
     std::string matrix_str;
     std::string special_str;
     int matrix_count = 0;
     int special_count = 0;
+    std::string matrix_filepath = "/dockerx/code/rocSOLVER/build/release/clients/staging/";
+    std::string special_filepath = "/dockerx/code/rocSOLVER/build/release/clients/staging/";
 
     // returns a unique_ptr to a file stream or a given default stream
     std::ostream* open_log_stream(const char* environment_variable);
@@ -374,6 +376,9 @@ public:
         int indent_level = 0;
         int indent = shift_width * indent_level;
 
+        std::ofstream curr_special_os(fmt::format("{}special_log_{}.txt", special_filepath, special_count / 3));
+        std::ofstream* special_os= &curr_special_os;
+
         if(sizeof...(Ts) > 0)
         {
             std::string pairs;
@@ -391,6 +396,8 @@ public:
         *special_os << special_str;
         special_str.clear();
         special_os->flush();
+
+        special_count++;
     }
 
     // logging function to be called before exiting a sub-level (i.e. template) function
@@ -409,6 +416,9 @@ public:
     // logging function to log matrices stored on the device before or after a kernel call
     template <typename U, typename T, typename I>
     void log_matrix(rocblas_handle handle, const char* func_name, T n, T ld, I matrix){
+        std::ofstream curr_matrix_os(fmt::format("{}matrix_log_{}.txt", matrix_filepath, matrix_count / 3));
+        std::ofstream* matrix_os = &curr_matrix_os;
+
         // assumes that matrix is stored in column major order
         // assume that leading dimension == m, or else transfers irrelevant data
         // assume we are not in the batched or strided batched case (assumes U is simply a pointer to the matrix data)
@@ -425,6 +435,8 @@ public:
         *matrix_os << "\n";
 
         matrix_os->flush();
+
+        matrix_count++;
     }
 
     /***************************************************************************
