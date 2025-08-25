@@ -414,14 +414,11 @@ public:
         std::vector<U> host_matrix(ld*n);
 
         hipMemcpy(host_matrix.data(), matrix, matrix_size, hipMemcpyDeviceToHost);
-        *matrix_os << "[ ";
 
         for (const auto& num: host_matrix) {
             matrix_str = fmt::format("{} ", num);
             *matrix_os << matrix_str;
         }
-
-        *matrix_os << "]";
 
         matrix_os->flush();
     }

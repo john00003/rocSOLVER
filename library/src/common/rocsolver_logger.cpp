@@ -75,7 +75,7 @@ std::ostream* rocsolver_logger::open_log_stream(const char* environment_variable
         std::ostream& os = file_streams.front();
 
         // print version info only once per file
-        if(&os != trace_os && &os != bench_os && &os != profile_os && &os != matrix_os && &os != special_os)
+        if(&os != trace_os && &os != bench_os && &os != profile_os)
         {
             fmt::print(os,
                        "ROCSOLVER LOG FILE\n"

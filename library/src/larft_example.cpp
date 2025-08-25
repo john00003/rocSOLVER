@@ -97,8 +97,8 @@ int main(int argc, char* argv[]){
     rocblas_stride strideF;
 
     std::vector<float> hV;
-    std::vector<float> hTau; 
-    std::vector<float> hT; 
+    std::vector<float> hTau;
+    std::vector<float> hT;
 
     read_matrix(argv[1], hV, hTau, hT);
 
