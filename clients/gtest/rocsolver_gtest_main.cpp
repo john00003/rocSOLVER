@@ -71,6 +71,8 @@ int main(int argc, char** argv)
         return -1;
     }
     set_device(0); // use first device
+    
+    rocsolver_log_begin();
 
     // Initialize gtest and rocBLAS
     ::testing::InitGoogleTest(&argc, argv);
@@ -78,5 +80,7 @@ int main(int argc, char** argv)
 
     int status = RUN_ALL_TESTS();
     print_version_info(); // redundant, but convenient when tests fail
+
+    rocsolver_log_end();
     return status;
 }
