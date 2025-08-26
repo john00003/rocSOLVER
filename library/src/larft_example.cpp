@@ -10,6 +10,100 @@
 
 ROCSOLVER_BEGIN_NAMESPACE
 
+template <typename T, typename U>
+ROCSOLVER_KERNEL void larft_kernel_forward_optimized(const rocblas_storev storev,
+                                           const rocblas_int n,
+                                           const rocblas_int k,
+                                           U VA,
+                                           const rocblas_int shiftV,
+                                           const rocblas_int ldv,
+                                           const rocblas_stride strideV,
+                                           T* tauA,
+                                           const rocblas_stride strideT,
+                                           T* FA,
+                                           const rocblas_int ldfA,
+                                           const rocblas_stride strideF)
+{
+    const rocblas_int bid = hipBlockIdx_y;
+    const rocblas_int tid = hipThreadIdx_x;
+    const rocblas_int tid_inc = hipBlockDim_x;
+
+    // select batch instance
+    T* V = load_ptr_batch<T>(VA, bid, shiftV, strideV);
+    T* tau = tauA + bid * strideT;
+    T* Ftemp = FA + bid * strideF;
+
+    // shared memory setup
+    extern __shared__ double lmem[];
+    T* work = reinterpret_cast<T*>(lmem);
+    T* F = work + k;
+    rocblas_int ldf = k;
+
+    // copy F to shared memory
+    for(rocblas_int i = tid; i < k; i += tid_inc)
+        for(rocblas_int j = i; j < k; j++)
+            F[i + j * ldf] = Ftemp[i + j * ldfA];
+    __syncthreads();
+
+    // --------- MAIN BODY ---------
+    for(rocblas_int kk = 1; kk < k; kk++)
+    {
+        const rocblas_int mm = kk;
+        const rocblas_int nn = n - 1 - kk;
+
+        T* Fx = F + kk * ldf;
+
+        // compute the matrix vector product, using the householder vectors
+        if(storev == rocblas_column_wise)
+        {
+            T* Vm = V + (kk + 1);
+            T* Vx = V + (kk + 1) + kk * ldv;
+
+            // gemv (conjugate transpose)
+            for(rocblas_int i = tid; i < mm; i += tid_inc)
+            {
+                T temp = 0;
+                for(rocblas_int j = 0; j < nn; j++)
+                    temp += conj(Vm[j + i * ldv]) * Vx[j];
+                work[i] = tau[kk] * temp + Fx[i];
+            }
+        }
+        else
+        {
+            T* Vm = V + (kk + 1) * ldv;
+            T* Vx = V + kk + (kk + 1) * ldv;
+
+            // gemv (no transpose)
+            for(rocblas_int i = tid; i < mm; i += tid_inc)
+            {
+                T temp = 0;
+                for(rocblas_int j = 0; j < nn; j++)
+                    temp += Vm[i + j * ldv] * conj(Vx[j * ldv]);
+                work[i] = tau[kk] * temp + Fx[i];
+            }
+        }
+
+        __syncthreads();
+
+        // multiply by previous triangular factor
+        // trmv (no transpose)
+        for(rocblas_int i = tid; i < mm; i += tid_inc)
+        {
+            T temp = 0;
+            for(rocblas_int j = i; j < mm; j++)
+                temp += F[i + j * ldf] * work[j];
+            Fx[i] = temp;
+        }
+
+        __syncthreads();
+    }
+
+    // copy shared memory back to F
+    for(rocblas_int i = tid; i < k; i += tid_inc)
+        for(rocblas_int j = i; j < k; j++)
+            Ftemp[i + j * ldfA] = F[i + j * ldf];
+}
+
 void read_string(const std::string& str, std::vector<float>& matrix, char delim = ' '){
     std::string segment;
     std::stringstream ss(str);
@@ -120,7 +214,7 @@ int main(int argc, char* argv[]){
     storev = rocsolver::char2rocblas_storev(storev_char);
 
     // optimized kernel call
-    hipLaunchKernelGGL(larft_kernel_forward, dim3(grid_dim_x, grid_dim_y, grid_dim_z), dim3(block_dim_x, block_dim_y, block_dim_z), lmemsize, 0, storev, n_int, k_int, dV, shiftV_int, ldv_int, strideV_int, dTau, strideT_int, dF, ldf_int, strideF_int);
+    hipLaunchKernelGGL(larft_kernel_forward_optimized, dim3(grid_dim_x, grid_dim_y, grid_dim_z), dim3(block_dim_x, block_dim_y, block_dim_z), lmemsize, 0, storev, n_int, k_int, dV, shiftV_int, ldv_int, strideV_int, dTau, strideT_int, dF, ldf_int, strideF_int);
 
     if (verify){
         // copy back optimized output data
