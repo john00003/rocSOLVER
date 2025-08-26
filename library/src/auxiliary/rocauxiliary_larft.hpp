@@ -617,18 +617,19 @@ rocblas_status rocsolver_larft_template(rocblas_handle handle,
         if(k <= LARFT_SWITCHSIZE && lmemsize <= props.sharedMemPerBlock)
         {
 
-            ROCSOLVER_ENTER_SPECIAL("larft", "grid dim x:", 1, "grid dim y:", batch_count, "grid dim z:", 1, "block dim x:", BS1, "block dim y:", 1, "block dim z:", 1, "lmemsize:", lmemsize, "storev:", storev, "n:", u1_n, "k:", k,
-                            "shiftV:", shiftV, "ldv:", ldv, "strideV:", strideV, "strideT:", strideT, "ldf:", ldf, "strideF:", strideF);
-            // log F
-            ROCSOLVER_LOG_MATRIX("before larft launch", k, ldf, F, T);
-            // log tau
-            ROCSOLVER_LOG_MATRIX("before larft launch", k, 1, tau, T);
-            //log V
-            ROCSOLVER_LOG_MATRIX("before larft launch", u1_n, ldv, V, T);
+            if (std::is_same<T, float>::value) {
+                ROCSOLVER_ENTER_SPECIAL("larft", "grid dim x:", 1, "grid dim y:", batch_count, "grid dim z:", 1, "block dim x:", BS1, "block dim y:", 1, "block dim z:", 1, "lmemsize:", lmemsize, "storev:", storev, "n:", u1_n, "k:", k,
+                                "shiftV:", shiftV, "ldv:", ldv, "strideV:", strideV, "strideT:", strideT, "ldf:", ldf, "strideF:", strideF);
+                // log F
+                ROCSOLVER_LOG_MATRIX("before larft launch", k, ldf, F, T);
+                // log tau
+                ROCSOLVER_LOG_MATRIX("before larft launch", k, 1, tau, T);
+                //log V
+                ROCSOLVER_LOG_MATRIX("before larft launch", u1_n, ldv, V, T);
+            }
             ROCSOLVER_LAUNCH_KERNEL(larft_kernel_forward, dim3(1, batch_count), dim3(BS1, 1),
                                     lmemsize, stream, storev, u1_n, k, V, shiftV, ldv, strideV, tau,
                                     strideT, F, ldf, strideF);
-            //ROCSOLVER_LOG_MATRIX("after larft launch", k, ldf, F, T);
         }
         else
         {

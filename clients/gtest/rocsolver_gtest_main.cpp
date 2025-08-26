@@ -1,5 +1,5 @@
 /* **************************************************************************
- * Copyright (C) 2020-2022 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2020-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
         return -1;
     }
     set_device(0); // use first device
-    
+
     rocsolver_log_begin();
 
     // Initialize gtest and rocBLAS
