@@ -288,66 +288,75 @@ set(rocsolver_refact_source
   refact/rocrefact_csrrf_solve.cpp
 )
 
-set(rocsolver_specialized_source
-  # larf
+# Core specialized kernels (always compiled) - grouped by data type for parallel compilation
+set(rocsolver_core_kernels_float
   specialized/rocauxiliary_larf_specialized_kernels_s.cpp
-  specialized/rocauxiliary_larf_specialized_kernels_d.cpp
-  specialized/rocauxiliary_larf_specialized_kernels_c.cpp
-  specialized/rocauxiliary_larf_specialized_kernels_z.cpp
-  # larfg
   specialized/rocauxiliary_larfg_specialized_kernels_s.cpp
-  specialized/rocauxiliary_larfg_specialized_kernels_d.cpp
-  specialized/rocauxiliary_larfg_specialized_kernels_c.cpp
-  specialized/rocauxiliary_larfg_specialized_kernels_z.cpp
-  # gemm
   specialized/roclapack_gemm_specialized_kernels_s.cpp
-  specialized/roclapack_gemm_specialized_kernels_d.cpp
-  specialized/roclapack_gemm_specialized_kernels_c.cpp
-  specialized/roclapack_gemm_specialized_kernels_z.cpp
-  # ger
   specialized/roclapack_ger_specialized_kernels_s.cpp
-  specialized/roclapack_ger_specialized_kernels_d.cpp
-  specialized/roclapack_ger_specialized_kernels_c.cpp
-  specialized/roclapack_ger_specialized_kernels_z.cpp
-  # trsm
   specialized/roclapack_trsm_specialized_kernels_s.cpp
-  specialized/roclapack_trsm_specialized_kernels_d.cpp
-  specialized/roclapack_trsm_specialized_kernels_c.cpp
-  specialized/roclapack_trsm_specialized_kernels_z.cpp
-  # potf2
   specialized/roclapack_potf2_specialized_kernels_s.cpp
+)
+
+set(rocsolver_core_kernels_double
+  specialized/rocauxiliary_larf_specialized_kernels_d.cpp
+  specialized/rocauxiliary_larfg_specialized_kernels_d.cpp
+  specialized/roclapack_gemm_specialized_kernels_d.cpp
+  specialized/roclapack_ger_specialized_kernels_d.cpp
+  specialized/roclapack_trsm_specialized_kernels_d.cpp
   specialized/roclapack_potf2_specialized_kernels_d.cpp
+)
+
+set(rocsolver_core_kernels_complex_float
+  specialized/rocauxiliary_larf_specialized_kernels_c.cpp
+  specialized/rocauxiliary_larfg_specialized_kernels_c.cpp
+  specialized/roclapack_gemm_specialized_kernels_c.cpp
+  specialized/roclapack_ger_specialized_kernels_c.cpp
+  specialized/roclapack_trsm_specialized_kernels_c.cpp
   specialized/roclapack_potf2_specialized_kernels_c.cpp
+)
+
+set(rocsolver_core_kernels_complex_double
+  specialized/rocauxiliary_larf_specialized_kernels_z.cpp
+  specialized/rocauxiliary_larfg_specialized_kernels_z.cpp
+  specialized/roclapack_gemm_specialized_kernels_z.cpp
+  specialized/roclapack_ger_specialized_kernels_z.cpp
+  specialized/roclapack_trsm_specialized_kernels_z.cpp
   specialized/roclapack_potf2_specialized_kernels_z.cpp
 )
 
-if(OPTIMAL)
-  list(APPEND rocsolver_specialized_source
-    # getf2
-    specialized/roclapack_getf2_specialized_kernels_s.cpp
-    specialized/roclapack_getf2_specialized_kernels_d.cpp
-    specialized/roclapack_getf2_specialized_kernels_c.cpp
-    specialized/roclapack_getf2_specialized_kernels_z.cpp
-    specialized/roclapack_getf2_small_s.cpp
-    specialized/roclapack_getf2_small_d.cpp
-    specialized/roclapack_getf2_small_c.cpp
-    specialized/roclapack_getf2_small_z.cpp
-    specialized/roclapack_getf2_small_sb.cpp
-    specialized/roclapack_getf2_small_db.cpp
-    specialized/roclapack_getf2_small_cb.cpp
-    specialized/roclapack_getf2_small_zb.cpp
-    # getri
-    specialized/roclapack_getri_specialized_kernels_s.cpp
-    specialized/roclapack_getri_specialized_kernels_d.cpp
-    specialized/roclapack_getri_specialized_kernels_c.cpp
-    specialized/roclapack_getri_specialized_kernels_z.cpp
-    # trtri
-    specialized/roclapack_trtri_specialized_kernels_s.cpp
-    specialized/roclapack_trtri_specialized_kernels_d.cpp
-    specialized/roclapack_trtri_specialized_kernels_c.cpp
-    specialized/roclapack_trtri_specialized_kernels_z.cpp
-  )
-endif()
+# OPTIMAL specialized kernels (conditionally compiled) - grouped by data type
+set(rocsolver_optimal_kernels_float
+  specialized/roclapack_getf2_specialized_kernels_s.cpp
+  specialized/roclapack_getf2_small_s.cpp
+  specialized/roclapack_getf2_small_sb.cpp
+  specialized/roclapack_getri_specialized_kernels_s.cpp
+  specialized/roclapack_trtri_specialized_kernels_s.cpp
+)
+
+set(rocsolver_optimal_kernels_double
+  specialized/roclapack_getf2_specialized_kernels_d.cpp
+  specialized/roclapack_getf2_small_d.cpp
+  specialized/roclapack_getf2_small_db.cpp
+  specialized/roclapack_getri_specialized_kernels_d.cpp
+  specialized/roclapack_trtri_specialized_kernels_d.cpp
+)
+
+set(rocsolver_optimal_kernels_complex_float
+  specialized/roclapack_getf2_specialized_kernels_c.cpp
+  specialized/roclapack_getf2_small_c.cpp
+  specialized/roclapack_getf2_small_cb.cpp
+  specialized/roclapack_getri_specialized_kernels_c.cpp
+  specialized/roclapack_trtri_specialized_kernels_c.cpp
+)
+
+set(rocsolver_optimal_kernels_complex_double
+  specialized/roclapack_getf2_specialized_kernels_z.cpp
+  specialized/roclapack_getf2_small_z.cpp
+  specialized/roclapack_getf2_small_zb.cpp
+  specialized/roclapack_getri_specialized_kernels_z.cpp
+  specialized/roclapack_trtri_specialized_kernels_z.cpp
+)
 
 set(auxiliaries
   common/buildinfo.cpp
@@ -360,11 +369,141 @@ set(common_source
   ${PROJECT_SOURCE_DIR}/common/src/common_host_helpers.cpp
 )
 
+# Create object libraries for parallel compilation of specialized kernels
+add_library(rocsolver_core_kernels_float_obj OBJECT ${rocsolver_core_kernels_float})
+add_library(rocsolver_core_kernels_double_obj OBJECT ${rocsolver_core_kernels_double})
+add_library(rocsolver_core_kernels_complex_float_obj OBJECT ${rocsolver_core_kernels_complex_float})
+add_library(rocsolver_core_kernels_complex_double_obj OBJECT ${rocsolver_core_kernels_complex_double})
+
+if(OPTIMAL)
+  add_library(rocsolver_optimal_kernels_float_obj OBJECT ${rocsolver_optimal_kernels_float})
+  add_library(rocsolver_optimal_kernels_double_obj OBJECT ${rocsolver_optimal_kernels_double})
+  add_library(rocsolver_optimal_kernels_complex_float_obj OBJECT ${rocsolver_optimal_kernels_complex_float})
+  add_library(rocsolver_optimal_kernels_complex_double_obj OBJECT ${rocsolver_optimal_kernels_complex_double})
+endif()
+
+# Configure all object libraries with the same settings
+set(rocsolver_object_libraries
+  rocsolver_core_kernels_float_obj
+  rocsolver_core_kernels_double_obj
+  rocsolver_core_kernels_complex_float_obj
+  rocsolver_core_kernels_complex_double_obj
+)
+
+if(OPTIMAL)
+  list(APPEND rocsolver_object_libraries
+    rocsolver_optimal_kernels_float_obj
+    rocsolver_optimal_kernels_double_obj
+    rocsolver_optimal_kernels_complex_float_obj
+    rocsolver_optimal_kernels_complex_double_obj
+  )
+endif()
+
+# Apply common settings to all object libraries
+foreach(obj_lib ${rocsolver_object_libraries})
+  # Set include directories
+  target_include_directories(${obj_lib} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/library/include
+    ${PROJECT_BINARY_DIR}/include/rocsolver
+    ${PROJECT_BINARY_DIR}/include
+  )
+
+  # Set compile definitions
+  target_compile_definitions(${obj_lib} PRIVATE
+    ROCM_USE_FLOAT16
+    ROCBLAS_INTERNAL_API
+    ROCSOLVER_LIBRARY
+  )
+
+  # Link dependencies to get necessary include paths and definitions
+  target_link_libraries(${obj_lib} PRIVATE
+    roc::rocblas
+    $<BUILD_INTERFACE:rocsolver-common>
+  )
+
+  # Add fmt library dependency with same logic as main target
+  if(ROCSOLVER_EMBED_FMT)
+    target_link_libraries(${obj_lib} PRIVATE $<BUILD_INTERFACE:fmt::fmt-header-only>)
+  else()
+    target_link_libraries(${obj_lib} PRIVATE fmt::fmt)
+  endif()
+
+  if(NOT USE_HIPCXX)
+    target_link_libraries(${obj_lib} PRIVATE hip::device)
+  endif()
+
+  # Apply GPU-specific compile options
+  if(USE_HIPCXX)
+    target_compile_options(${obj_lib} PRIVATE
+      $<$<COMPILE_LANGUAGE:HIP>:--gpu-max-threads-per-block=1024>)
+  else()
+    target_compile_options(${obj_lib} PRIVATE --gpu-max-threads-per-block=1024)
+  endif()
+
+  # Ignore loop unrolling failures
+  target_compile_options(${obj_lib} PRIVATE -Wno-pass-failed)
+
+  # hipcc optimizations
+  if(USE_HIPCXX)
+    target_compile_options(${obj_lib} PRIVATE
+      "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-early-inline-all=true>"
+      "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-function-calls=false>"
+    )
+  elseif(CMAKE_CXX_COMPILER MATCHES ".*clang\\+\\+.*")
+    target_compile_options(${obj_lib} PRIVATE
+      "SHELL:-mllvm -amdgpu-early-inline-all=true"
+      "SHELL:-mllvm -amdgpu-function-calls=false"
+    )
+  endif()
+
+  if(BUILD_OFFLOAD_COMPRESS)
+    target_compile_options(${obj_lib} PRIVATE "--offload-compress")
+  endif()
+
+  # Apply armor flags
+  add_armor_flags(${obj_lib} "${ARMOR_LEVEL}")
+
+  # Set Position Independent Code for shared library linking
+  set_target_properties(${obj_lib} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+endforeach()
+
+# Add OPTIMAL definition to optimal kernel object libraries
+if(OPTIMAL)
+  set(optimal_obj_libs
+    rocsolver_optimal_kernels_float_obj
+    rocsolver_optimal_kernels_double_obj
+    rocsolver_optimal_kernels_complex_float_obj
+    rocsolver_optimal_kernels_complex_double_obj
+  )
+  foreach(obj_lib ${optimal_obj_libs})
+    target_compile_definitions(${obj_lib} PRIVATE OPTIMAL)
+  endforeach()
+endif()
+
+# Collect all specialized kernel sources for HIP language setting
+set(all_specialized_sources
+  ${rocsolver_core_kernels_float}
+  ${rocsolver_core_kernels_double}
+  ${rocsolver_core_kernels_complex_float}
+  ${rocsolver_core_kernels_complex_double}
+)
+
+if(OPTIMAL)
+  list(APPEND all_specialized_sources
+    ${rocsolver_optimal_kernels_float}
+    ${rocsolver_optimal_kernels_double}
+    ${rocsolver_optimal_kernels_complex_float}
+    ${rocsolver_optimal_kernels_complex_double}
+  )
+endif()
+
 if(USE_HIPCXX)
   set_source_files_properties(
     ${common_source}
     ${auxiliaries}
-    ${rocsolver_specialized_source}
+    ${all_specialized_sources}
     ${rocsolver_auxiliary_source}
     ${rocsolver_lapack_source}
     ${rocsolver_refact_source}
@@ -376,10 +515,17 @@ endif()
 add_library(rocsolver
   ${common_source}
   ${auxiliaries}
-  ${rocsolver_specialized_source}
   ${rocsolver_auxiliary_source}
   ${rocsolver_lapack_source}
   ${rocsolver_refact_source}
+  $<TARGET_OBJECTS:rocsolver_core_kernels_float_obj>
+  $<TARGET_OBJECTS:rocsolver_core_kernels_double_obj>
+  $<TARGET_OBJECTS:rocsolver_core_kernels_complex_float_obj>
+  $<TARGET_OBJECTS:rocsolver_core_kernels_complex_double_obj>
+  $<$<BOOL:${OPTIMAL}>:$<TARGET_OBJECTS:rocsolver_optimal_kernels_float_obj>>
+  $<$<BOOL:${OPTIMAL}>:$<TARGET_OBJECTS:rocsolver_optimal_kernels_double_obj>>
+  $<$<BOOL:${OPTIMAL}>:$<TARGET_OBJECTS:rocsolver_optimal_kernels_complex_float_obj>>
+  $<$<BOOL:${OPTIMAL}>:$<TARGET_OBJECTS:rocsolver_optimal_kernels_complex_double_obj>>
 )
 
 add_library(roc::rocsolver ALIAS rocsolver)
@@ -541,4 +687,3 @@ rocm_export_targets(
     ${static_depends}
   NAMESPACE roc::
 )
-
