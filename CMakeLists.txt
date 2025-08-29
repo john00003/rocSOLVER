@@ -127,6 +127,87 @@ include(CheckLanguage)
 include(CMakeDependentOption)
 include(CheckCXXCompilerFlag)
 
+# ########################################################################
+# Build Performance Optimizations
+# ########################################################################
+
+# Enable precompiled headers for build performance improvement
+option(ROCSOLVER_USE_PCH "Enable precompiled headers for faster compilation" ON)
+
+# Function to apply PCH to a target
+function(rocsolver_apply_pch target_name)
+  if(ROCSOLVER_USE_PCH)
+    # Only apply PCH if the target exists and PCH is enabled
+    if(TARGET ${target_name})
+      target_precompile_headers(${target_name} PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/library/src/include/rocsolver_pch.hpp>"
+      )
+      
+      # For HIP language support, also apply to HIP files
+      if(USE_HIPCXX)
+        target_precompile_headers(${target_name} PRIVATE
+          "$<$<COMPILE_LANGUAGE:HIP>:${CMAKE_CURRENT_SOURCE_DIR}/library/src/include/rocsolver_pch.hpp>"
+        )
+      endif()
+      
+      message(STATUS "Applied precompiled headers to target: ${target_name}")
+    endif()
+  endif()
+endfunction()
+
+# Global PCH interface library for sharing across targets
+if(ROCSOLVER_USE_PCH)
+  add_library(rocsolver_pch_interface INTERFACE)
+  target_precompile_headers(rocsolver_pch_interface INTERFACE
+    "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/library/src/include/rocsolver_pch.hpp>"
+  )
+  
+  if(USE_HIPCXX)
+    target_precompile_headers(rocsolver_pch_interface INTERFACE
+      "$<$<COMPILE_LANGUAGE:HIP>:${CMAKE_CURRENT_SOURCE_DIR}/library/src/include/rocsolver_pch.hpp>"
+    )
+    set_source_files_properties(rocsolver_pch_interface PROPERTIES LANGUAGE HIP) 
+  endif()
+  
+  message(STATUS "Precompiled headers enabled - using rocsolver_pch.hpp")
+
+  # Apply the same compilation settings as specialized kernels to ensure architecture compatibility
+  # This ensures PCH is compiled for the same target (GPU vs host) as the consuming targets
+  if(USE_HIPCXX)
+    target_compile_options(rocsolver_pch_interface INTERFACE
+      $<$<COMPILE_LANGUAGE:HIP>:--gpu-max-threads-per-block=1024>
+      "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-early-inline-all=true>"
+      "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-function-calls=false>"
+    )
+  else()
+    target_compile_options(rocsolver_pch_interface INTERFACE
+      --gpu-max-threads-per-block=1024
+    )
+    if(CMAKE_CXX_COMPILER MATCHES ".*clang\\+\\+.*")
+      target_compile_options(rocsolver_pch_interface INTERFACE
+        "SHELL:-mllvm -amdgpu-early-inline-all=true"
+        "SHELL:-mllvm -amdgpu-function-calls=false"
+      )
+    endif()
+    # Link to hip::device to get GPU target architecture
+    target_link_libraries(rocsolver_pch_interface INTERFACE hip::device)
+  endif()
+  
+  if(BUILD_OFFLOAD_COMPRESS AND CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
+    target_compile_options(rocsolver_pch_interface INTERFACE "--offload-compress")
+  endif()
+  
+  # Add the same compile definitions that specialized kernels get
+  target_compile_definitions(rocsolver_pch_interface INTERFACE
+    ROCM_USE_FLOAT16
+    ROCBLAS_INTERNAL_API
+    ROCSOLVER_LIBRARY
+  )
+else()
+  add_library(rocsolver_pch_interface INTERFACE)
+  message(STATUS "Precompiled headers disabled")
+endif()
+
 option(BUILD_TESTING "Build rocSOLVER tests" OFF)
 if(BUILD_TESTING)
   enable_testing()

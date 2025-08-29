@@ -28,7 +28,8 @@
 # package_targets is used as a list of install target
 set(package_targets rocsolver)
 
-set(rocsolver_lapack_source
+# LAPACK sources grouped by functional category for parallel compilation
+set(rocsolver_lapack_linear_systems
   #### Linear Systems Solvers ####
   ################################
   #- general inverse
@@ -72,6 +73,9 @@ set(rocsolver_lapack_source
   lapack/roclapack_gels_batched.cpp
   lapack/roclapack_gels_strided_batched.cpp
   lapack/roclapack_gels_outofplace.cpp
+)
+
+set(rocsolver_lapack_factorizations
   #### Triangular Factorizations ####
   ###################################
   #- general matrices
@@ -102,6 +106,9 @@ set(rocsolver_lapack_source
   lapack/roclapack_geblttrf_npvt_batched.cpp
   lapack/roclapack_geblttrf_npvt_strided_batched.cpp
   lapack/roclapack_geblttrf_npvt_interleaved_batched.cpp
+)
+
+set(rocsolver_lapack_orthogonal
   #### Orthogonal Factorizations ####
   ###################################
   #- bottom row compression
@@ -133,6 +140,9 @@ set(rocsolver_lapack_source
   lapack/roclapack_gerqf.cpp
   lapack/roclapack_gerqf_batched.cpp
   lapack/roclapack_gerqf_strided_batched.cpp
+)
+
+set(rocsolver_lapack_reductions
   #### Problem and Matrix Reductions (Diagonalizations) ####
   ##########################################################
   #- bidiagonalization
@@ -156,6 +166,9 @@ set(rocsolver_lapack_source
   lapack/roclapack_sygst_hegst.cpp
   lapack/roclapack_sygst_hegst_batched.cpp
   lapack/roclapack_sygst_hegst_strided_batched.cpp
+)
+
+set(rocsolver_lapack_svd
   #### Singular Value Decomposition ####
   ######################################
   #- classic
@@ -179,6 +192,9 @@ set(rocsolver_lapack_source
   lapack/roclapack_gesvdx_batched.cpp
   lapack/roclapack_gesvdx_strided_batched.cpp
   lapack/roclapack_gesvdx_notransv_strided_batched.cpp
+)
+
+set(rocsolver_lapack_eigensolvers
   #### Symmetric Eigensolvers ####
   ################################
   #- classic
@@ -227,7 +243,18 @@ set(rocsolver_lapack_source
   lapack/roclapack_sygvdx_hegvdx_inplace.cpp
 )
 
-set(rocsolver_auxiliary_source
+# Consolidated LAPACK source list for main target
+set(rocsolver_lapack_source
+  ${rocsolver_lapack_linear_systems}
+  ${rocsolver_lapack_factorizations}
+  ${rocsolver_lapack_orthogonal}
+  ${rocsolver_lapack_reductions}
+  ${rocsolver_lapack_svd}
+  ${rocsolver_lapack_eigensolvers}
+)
+
+# Auxiliary sources grouped by functional category for parallel compilation
+set(rocsolver_auxiliary_basic
   # vector & matrix manipulations
   auxiliary/rocauxiliary_aliases.cpp
   auxiliary/rocauxiliary_lacgv.cpp
@@ -239,6 +266,9 @@ set(rocsolver_auxiliary_source
   auxiliary/rocauxiliary_larfb.cpp
   # plane rotations
   auxiliary/rocauxiliary_lasr.cpp
+)
+
+set(rocsolver_auxiliary_orthogonal
   # orthonormal/unitary matrices
   auxiliary/rocauxiliary_org2r_ung2r.cpp
   auxiliary/rocauxiliary_orgqr_ungqr.cpp
@@ -256,6 +286,9 @@ set(rocsolver_auxiliary_source
   auxiliary/rocauxiliary_ormql_unmql.cpp
   auxiliary/rocauxiliary_ormbr_unmbr.cpp
   auxiliary/rocauxiliary_ormtr_unmtr.cpp
+)
+
+set(rocsolver_auxiliary_matrix_operations
   # bidiagonal matrices
   auxiliary/rocauxiliary_bdsqr.cpp
   auxiliary/rocauxiliary_bdsvdx.cpp
@@ -273,6 +306,13 @@ set(rocsolver_auxiliary_source
   auxiliary/rocauxiliary_lasyf.cpp
   # triangular matrices
   auxiliary/rocauxiliary_lauum.cpp
+)
+
+# Consolidated auxiliary source list for main target
+set(rocsolver_auxiliary_source
+  ${rocsolver_auxiliary_basic}
+  ${rocsolver_auxiliary_orthogonal}
+  ${rocsolver_auxiliary_matrix_operations}
 )
 
 set(rocsolver_refact_source
@@ -382,12 +422,34 @@ if(OPTIMAL)
   add_library(rocsolver_optimal_kernels_complex_double_obj OBJECT ${rocsolver_optimal_kernels_complex_double})
 endif()
 
+# Create object libraries for parallel compilation of LAPACK sources
+add_library(rocsolver_lapack_linear_systems_obj OBJECT ${rocsolver_lapack_linear_systems})
+add_library(rocsolver_lapack_factorizations_obj OBJECT ${rocsolver_lapack_factorizations})
+add_library(rocsolver_lapack_orthogonal_obj OBJECT ${rocsolver_lapack_orthogonal})
+add_library(rocsolver_lapack_reductions_obj OBJECT ${rocsolver_lapack_reductions})
+add_library(rocsolver_lapack_svd_obj OBJECT ${rocsolver_lapack_svd})
+add_library(rocsolver_lapack_eigensolvers_obj OBJECT ${rocsolver_lapack_eigensolvers})
+
+# Create object libraries for parallel compilation of auxiliary sources
+add_library(rocsolver_auxiliary_basic_obj OBJECT ${rocsolver_auxiliary_basic})
+add_library(rocsolver_auxiliary_orthogonal_obj OBJECT ${rocsolver_auxiliary_orthogonal})
+add_library(rocsolver_auxiliary_matrix_operations_obj OBJECT ${rocsolver_auxiliary_matrix_operations})
+
 # Configure all object libraries with the same settings
 set(rocsolver_object_libraries
   rocsolver_core_kernels_float_obj
   rocsolver_core_kernels_double_obj
   rocsolver_core_kernels_complex_float_obj
   rocsolver_core_kernels_complex_double_obj
+  rocsolver_lapack_linear_systems_obj
+  rocsolver_lapack_factorizations_obj
+  rocsolver_lapack_orthogonal_obj
+  rocsolver_lapack_reductions_obj
+  rocsolver_lapack_svd_obj
+  rocsolver_lapack_eigensolvers_obj
+  rocsolver_auxiliary_basic_obj
+  rocsolver_auxiliary_orthogonal_obj
+  rocsolver_auxiliary_matrix_operations_obj
 )
 
 if(OPTIMAL)
@@ -402,7 +464,7 @@ endif()
 # Apply common settings to all object libraries
 foreach(obj_lib ${rocsolver_object_libraries})
   # Set include directories
-  target_include_directories(${obj_lib} PRIVATE
+  target_include_directories(${obj_lib} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/library/include
@@ -411,55 +473,55 @@ foreach(obj_lib ${rocsolver_object_libraries})
   )
 
   # Set compile definitions
-  target_compile_definitions(${obj_lib} PRIVATE
+  target_compile_definitions(${obj_lib} PUBLIC
     ROCM_USE_FLOAT16
     ROCBLAS_INTERNAL_API
     ROCSOLVER_LIBRARY
   )
 
   # Link dependencies to get necessary include paths and definitions
-  target_link_libraries(${obj_lib} PRIVATE
+  target_link_libraries(${obj_lib} PUBLIC
     roc::rocblas
     $<BUILD_INTERFACE:rocsolver-common>
   )
 
   # Add fmt library dependency with same logic as main target
   if(ROCSOLVER_EMBED_FMT)
-    target_link_libraries(${obj_lib} PRIVATE $<BUILD_INTERFACE:fmt::fmt-header-only>)
+    target_link_libraries(${obj_lib} PUBLIC $<BUILD_INTERFACE:fmt::fmt-header-only>)
   else()
-    target_link_libraries(${obj_lib} PRIVATE fmt::fmt)
+    target_link_libraries(${obj_lib} PUBLIC fmt::fmt)
   endif()
 
   if(NOT USE_HIPCXX)
-    target_link_libraries(${obj_lib} PRIVATE hip::device)
+    target_link_libraries(${obj_lib} PUBLIC hip::device)
   endif()
 
   # Apply GPU-specific compile options
   if(USE_HIPCXX)
-    target_compile_options(${obj_lib} PRIVATE
+    target_compile_options(${obj_lib} PUBLIC
       $<$<COMPILE_LANGUAGE:HIP>:--gpu-max-threads-per-block=1024>)
   else()
-    target_compile_options(${obj_lib} PRIVATE --gpu-max-threads-per-block=1024)
+    target_compile_options(${obj_lib} PUBLIC --gpu-max-threads-per-block=1024)
   endif()
 
   # Ignore loop unrolling failures
-  target_compile_options(${obj_lib} PRIVATE -Wno-pass-failed)
+  target_compile_options(${obj_lib} PUBLIC -Wno-pass-failed)
 
   # hipcc optimizations
   if(USE_HIPCXX)
-    target_compile_options(${obj_lib} PRIVATE
+    target_compile_options(${obj_lib} PUBLIC
       "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-early-inline-all=true>"
       "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-function-calls=false>"
     )
   elseif(CMAKE_CXX_COMPILER MATCHES ".*clang\\+\\+.*")
-    target_compile_options(${obj_lib} PRIVATE
+    target_compile_options(${obj_lib} PUBLIC
       "SHELL:-mllvm -amdgpu-early-inline-all=true"
       "SHELL:-mllvm -amdgpu-function-calls=false"
     )
   endif()
 
   if(BUILD_OFFLOAD_COMPRESS)
-    target_compile_options(${obj_lib} PRIVATE "--offload-compress")
+    target_compile_options(${obj_lib} PUBLIC "--offload-compress")
   endif()
 
   # Apply armor flags
@@ -467,6 +529,14 @@ foreach(obj_lib ${rocsolver_object_libraries})
 
   # Set Position Independent Code for shared library linking
   set_target_properties(${obj_lib} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
+  # Apply precompiled headers directly to each object library
+  # This ensures each PCH is compiled with the same settings as the object library itself
+  if(ROCSOLVER_USE_PCH)
+    target_precompile_headers(${obj_lib} PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/rocsolver_pch.hpp
+    )
+  endif()
 endforeach()
 
 # Add OPTIMAL definition to optimal kernel object libraries
@@ -515,13 +585,20 @@ endif()
 add_library(rocsolver
   ${common_source}
   ${auxiliaries}
-  ${rocsolver_auxiliary_source}
-  ${rocsolver_lapack_source}
   ${rocsolver_refact_source}
   $<TARGET_OBJECTS:rocsolver_core_kernels_float_obj>
   $<TARGET_OBJECTS:rocsolver_core_kernels_double_obj>
   $<TARGET_OBJECTS:rocsolver_core_kernels_complex_float_obj>
   $<TARGET_OBJECTS:rocsolver_core_kernels_complex_double_obj>
+  $<TARGET_OBJECTS:rocsolver_lapack_linear_systems_obj>
+  $<TARGET_OBJECTS:rocsolver_lapack_factorizations_obj>
+  $<TARGET_OBJECTS:rocsolver_lapack_orthogonal_obj>
+  $<TARGET_OBJECTS:rocsolver_lapack_reductions_obj>
+  $<TARGET_OBJECTS:rocsolver_lapack_svd_obj>
+  $<TARGET_OBJECTS:rocsolver_lapack_eigensolvers_obj>
+  $<TARGET_OBJECTS:rocsolver_auxiliary_basic_obj>
+  $<TARGET_OBJECTS:rocsolver_auxiliary_orthogonal_obj>
+  $<TARGET_OBJECTS:rocsolver_auxiliary_matrix_operations_obj>
   $<$<BOOL:${OPTIMAL}>:$<TARGET_OBJECTS:rocsolver_optimal_kernels_float_obj>>
   $<$<BOOL:${OPTIMAL}>:$<TARGET_OBJECTS:rocsolver_optimal_kernels_double_obj>>
   $<$<BOOL:${OPTIMAL}>:$<TARGET_OBJECTS:rocsolver_optimal_kernels_complex_float_obj>>
@@ -539,6 +616,13 @@ target_link_libraries(rocsolver
     $<$<PLATFORM_ID:Linux>:--rtlib=compiler-rt>
     $<$<PLATFORM_ID:Linux>:--unwindlib=libgcc>
 )
+
+# Apply precompiled headers directly to main target for build performance improvement
+if(ROCSOLVER_USE_PCH)
+  target_precompile_headers(rocsolver PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/rocsolver_pch_interface
+  )
+  endif()
 if(NOT USE_HIPCXX)
   target_link_libraries(rocsolver PRIVATE hip::device)
 endif()
