@@ -533,9 +533,10 @@ foreach(obj_lib ${rocsolver_object_libraries})
   # Apply precompiled headers directly to each object library
   # This ensures each PCH is compiled with the same settings as the object library itself
   if(ROCSOLVER_USE_PCH)
-    target_precompile_headers(${obj_lib} PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/include/rocsolver_pch.hpp
-    )
+    target_link_libraries(${obj_lib} PRIVATE rocsolver_pch_interface)
+  #   target_precompile_headers(${obj_lib} PRIVATE
+  #     ${CMAKE_CURRENT_SOURCE_DIR}/include/rocsolver_pch.hpp
+  #   )
   endif()
 endforeach()
 
@@ -615,14 +616,15 @@ target_link_libraries(rocsolver
     roc::rocprim
     $<$<PLATFORM_ID:Linux>:--rtlib=compiler-rt>
     $<$<PLATFORM_ID:Linux>:--unwindlib=libgcc>
+    rocsolver_pch_interface
 )
 
 # Apply precompiled headers directly to main target for build performance improvement
-if(ROCSOLVER_USE_PCH)
-  target_precompile_headers(rocsolver PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/rocsolver_pch_interface
-  )
-  endif()
+# if(ROCSOLVER_USE_PCH)
+#   target_precompile_headers(rocsolver PRIVATE
+#     ${CMAKE_CURRENT_SOURCE_DIR}/include/rocsolver_pch_interface
+#   )
+#   endif()
 if(NOT USE_HIPCXX)
   target_link_libraries(rocsolver PRIVATE hip::device)
 endif()
