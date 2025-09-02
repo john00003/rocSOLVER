@@ -40,7 +40,7 @@ ROCSOLVER_BEGIN_NAMESPACE
 
 // return char from type
 template <typename>
-static constexpr char rocblas2char_precision = '\0';
+inline constexpr char rocblas2char_precision = '\0';
 template <>
 inline constexpr auto rocblas2char_precision<float> = 's';
 template <>
