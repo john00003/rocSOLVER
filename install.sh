@@ -618,12 +618,14 @@ fi
 # check exit codes for everything from here onwards
 set -eu
 
-${cmake_executable} "${cmake_common_options[@]}" "${cmake_client_options[@]}" -DCMAKE_SHARED_LINKER_FLAGS="${rocm_rpath}" "${main}"
+${cmake_executable} -G Ninja "${cmake_common_options[@]}" "${cmake_client_options[@]}" -DCMAKE_SHARED_LINKER_FLAGS="${rocm_rpath}" "${main}"
 
 if [[ "${build_library}" == true ]]; then
-  ${cmake_executable} --build . -j$(nproc) --target install
+  ninja
+  # ${cmake_executable} --build . -j$(nproc) --target install
 else
-  ${cmake_executable} --build . -j$(nproc)
+  ninja clients
+  # ${cmake_executable} --build . -j$(nproc)
 fi
 
 # #################################################
