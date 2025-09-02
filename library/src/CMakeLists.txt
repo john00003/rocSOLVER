@@ -460,6 +460,8 @@ target_include_directories(rocsolver
 )
 
 set_target_properties(rocsolver PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/staging")
+set_target_properties(rocsolver PROPERTIES UNITY_BUILD ON)
+set_target_properties(rocsolver PROPERTIES UNITY_BUILD_BATCH_SIZE 10)
 rocm_set_soversion(rocsolver ${rocsolver_SOVERSION})
 
 # set visibility for function names exported from shared library
