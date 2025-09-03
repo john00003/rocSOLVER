@@ -174,6 +174,26 @@ if(BUILD_CLIENTS_BENCHMARKS OR BUILD_CLIENTS_TESTS)
 
   prepend_path("${CMAKE_CURRENT_SOURCE_DIR}/" common_source_files common_source_paths)
 
+  add_library(common_source OBJECT ${common_source_paths})
+  target_link_libraries(common_source PRIVATE clients-common rocsolver-common roc::rocsolver)
+
+  if(USE_HIPCXX)
+    set_source_files_properties(
+      ${common_source_paths}
+      PROPERTIES
+        LANGUAGE HIP
+    )
+  endif()
+
+  if(NOT USE_HIPCXX)
+    target_link_libraries(common_source PRIVATE hip::device)
+  endif()
+
+  target_compile_definitions(common_source PRIVATE
+    ROCM_USE_FLOAT16
+    ROCSOLVER_CLIENTS_BENCH
+  )
+
   # Copy and point to sparse test data
   file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/sparsedata/

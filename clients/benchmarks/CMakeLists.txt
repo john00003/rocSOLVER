@@ -31,13 +31,11 @@ set(rocsolver_bench_common_source
 
 add_executable(rocsolver-bench
   client.cpp
-  ${common_source_paths}
   ${rocsolver_bench_common_source}
 )
 if(USE_HIPCXX)
   set_source_files_properties(
     client.cpp
-    ${common_source_paths}
     ${rocsolver_bench_common_source}
     PROPERTIES
       LANGUAGE HIP
@@ -47,6 +45,7 @@ endif()
 add_armor_flags(rocsolver-bench "${ARMOR_LEVEL}")
 
 target_link_libraries(rocsolver-bench PRIVATE
+  common_source
   Threads::Threads
   hip::host
   rocsolver-common

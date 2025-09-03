@@ -156,6 +156,7 @@ message(STATUS "Tests: ${BUILD_CLIENTS_TESTS}")
 message(STATUS "Benchmarks: ${BUILD_CLIENTS_BENCHMARKS}")
 message(STATUS "Samples: ${BUILD_CLIENTS_SAMPLES}")
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace -E")
 check_language(HIP)
 cmake_dependent_option(USE_HIPCXX "Use CMake HIP language support" OFF CMAKE_HIP_COMPILER OFF)
 if(USE_HIPCXX)

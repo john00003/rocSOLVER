@@ -154,7 +154,6 @@ set(rocsolver_test_common_source
 
 if(USE_HIPCXX)
   set_source_files_properties(
-    ${common_source_paths}
     ${rocsolver_test_common_source}
     ${roclapack_test_source}
     ${rocauxiliary_test_source}
@@ -167,7 +166,6 @@ if(USE_HIPCXX)
 endif()
 
 add_executable(rocsolver-test
-  ${common_source_paths}
   ${rocsolver_test_common_source}
   ${roclapack_test_source}
   ${rocauxiliary_test_source}
@@ -209,6 +207,7 @@ if(WIN32)
 endif()
 
 target_link_libraries(rocsolver-test PRIVATE
+  common_source
   $<IF:$<TARGET_EXISTS:GTest::gtest>,GTest::gtest,GTest::GTest>
   hip::host
   rocsolver-common

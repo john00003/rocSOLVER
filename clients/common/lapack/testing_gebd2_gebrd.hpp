@@ -677,3 +677,48 @@ INSTANTIATE(EXTERN_TESTING_GEBD2_GEBRD,
             FOREACH_BLOCKED_VARIANT,
             FOREACH_SCALAR_TYPE,
             APPLY_STAMP)
+
+// #define EXTERN_TESTING_GEBD2_GEBRD_BAD_ARG(...) \
+//     extern template void testing_gebd2_gebrd_bad_arg<__VA_ARGS__>();
+
+// INSTANTIATE(EXTERN_TESTING_GEBD2_GEBRD_BAD_ARG,
+//             FOREACH_MATRIX_DATA_LAYOUT,
+//             FOREACH_BLOCKED_VARIANT,
+//             FOREACH_SCALAR_TYPE,
+//             APPLY_STAMP)
+
+// #define EXTERN_GEBD2_GEBRD_CHECKBADARGS(...) \
+//     extern template void gebd2_gebrd_checkBadArgs<__VA_ARGS__>;
+
+// INSTANTIATE(EXTERN_GEBD2_GEBRD_CHECKBADARGS,
+//             FOREACH_MATRIX_DATA_LAYOUT,
+//             FOREACH_BLOCKED_VARIANT,
+//             FOREACH_SCALAR_TYPE,
+//             APPLY_STAMP)
+
+// #define EXTERN_GEBD2_GEBRD_GETPERFDATA(...) \
+//     extern template void gebd2_gebrd_getPerfData<__VA_ARGS__>;
+
+// INSTANTIATE(EXTERN_GEBD2_GEBRD_GETPERFDATA,
+//             FOREACH_MATRIX_DATA_LAYOUT,
+//             FOREACH_BLOCKED_VARIANT,
+//             FOREACH_SCALAR_TYPE,
+//             APPLY_STAMP)
+
+// #define EXTERN_GEBD2_GEBRD_GETERROR(...) \
+//     extern template void gebd2_gebrd_getError<__VA_ARGS__>;
+
+// INSTANTIATE(EXTERN_GEBD2_GEBRD_GETERROR,
+//             FOREACH_MATRIX_DATA_LAYOUT,
+//             FOREACH_BLOCKED_VARIANT,
+//             FOREACH_SCALAR_TYPE,
+//             APPLY_STAMP)
+
+// #define EXTERN_GEBD2_GEBRD_INITDATA(...) \
+//     extern template void gebd2_gebrd_initData<__VA_ARGS__>;
+
+// INSTANTIATE(EXTERN_GEBD2_GEBRD_INITDATA,
+//             FOREACH_MATRIX_DATA_LAYOUT,
+//             FOREACH_BLOCKED_VARIANT,
+//             FOREACH_SCALAR_TYPE,
+//             APPLY_STAMP)
