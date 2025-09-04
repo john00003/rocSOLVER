@@ -152,6 +152,8 @@ option(BUILD_COMPRESSED_DBG "Enable compressed debug symbols" ON)
 check_cxx_compiler_flag("--offload-compress" CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS)
 cmake_dependent_option(BUILD_OFFLOAD_COMPRESS "Build with offload compression" ON CXX_COMPILER_SUPPORTS_OFFLOAD_COMPRESS OFF)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
+
 message(STATUS "Tests: ${BUILD_CLIENTS_TESTS}")
 message(STATUS "Benchmarks: ${BUILD_CLIENTS_BENCHMARKS}")
 message(STATUS "Samples: ${BUILD_CLIENTS_SAMPLES}")

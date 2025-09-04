@@ -466,11 +466,93 @@ if(USE_HIPCXX)
   )
 endif()
 
+add_library(rocsolver-specialized-source OBJECT
+  ${rocsolver_specialized_source}
+)
+
+add_library(rocsolver-auxiliary-source OBJECT
+  ${rocsolver_auxiliary_source}
+)
+
+set(rocsolver_object_libraries
+  rocsolver-specialized-source
+  rocsolver-auxiliary-source
+)
+
+foreach(obj_lib IN LISTS rocsolver_object_libraries)
+  # Set include directories
+  target_include_directories(${obj_lib} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/library/include
+    ${PROJECT_BINARY_DIR}/include/rocsolver
+    ${PROJECT_BINARY_DIR}/include
+  )
+
+  # Set compile definitions
+  target_compile_definitions(${obj_lib} PRIVATE
+    ROCM_USE_FLOAT16
+    ROCBLAS_INTERNAL_API
+    ROCSOLVER_LIBRARY
+  )
+
+  # Link dependencies to get necessary include paths and definitions
+  target_link_libraries(${obj_lib} PRIVATE
+    roc::rocblas
+    $<BUILD_INTERFACE:rocsolver-common>
+  )
+
+  # Add fmt library dependency with same logic as main target
+  if(ROCSOLVER_EMBED_FMT)
+    target_link_libraries(${obj_lib} PRIVATE $<BUILD_INTERFACE:fmt::fmt-header-only>)
+  else()
+    target_link_libraries(${obj_lib} PRIVATE fmt::fmt)
+  endif()
+
+  if(NOT USE_HIPCXX)
+    target_link_libraries(${obj_lib} PRIVATE hip::device)
+  endif()
+
+  # Apply GPU-specific compile options
+  if(USE_HIPCXX)
+    target_compile_options(${obj_lib} PRIVATE
+      $<$<COMPILE_LANGUAGE:HIP>:--gpu-max-threads-per-block=1024>)
+  else()
+    target_compile_options(${obj_lib} PRIVATE --gpu-max-threads-per-block=1024)
+  endif()
+
+  # Ignore loop unrolling failures
+  target_compile_options(${obj_lib} PRIVATE -Wno-pass-failed)
+
+  # hipcc optimizations
+  if(USE_HIPCXX)
+    target_compile_options(${obj_lib} PRIVATE
+      "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-early-inline-all=true>"
+      "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-mllvm -amdgpu-function-calls=false>"
+    )
+  elseif(CMAKE_CXX_COMPILER MATCHES ".*clang\\+\\+.*")
+    target_compile_options(${obj_lib} PRIVATE
+      "SHELL:-mllvm -amdgpu-early-inline-all=true"
+      "SHELL:-mllvm -amdgpu-function-calls=false"
+    )
+  endif()
+
+  if(BUILD_OFFLOAD_COMPRESS)
+    target_compile_options(${obj_lib} PRIVATE "--offload-compress")
+  endif()
+
+  # Apply armor flags
+  add_armor_flags(${obj_lib} "${ARMOR_LEVEL}")
+
+  # Set Position Independent Code for shared library linking
+  set_target_properties(${obj_lib} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+endforeach()
+
 add_library(rocsolver
   ${common_source}
   ${auxiliaries}
-  ${rocsolver_specialized_source}
-  ${rocsolver_auxiliary_source}
+  # ${rocsolver_specialized_source}
+  # ${rocsolver_auxiliary_source}
   ${rocsolver_lapack_source}
   ${rocsolver_lapack_batched_source}
   ${rocsolver_lapack_strided_batched_source}
@@ -485,6 +567,8 @@ target_link_libraries(rocsolver
   PRIVATE
     $<BUILD_INTERFACE:rocsolver-common> # https://gitlab.kitware.com/cmake/cmake/-/issues/15415
     roc::rocprim
+    rocsolver-auxiliary-source
+    rocsolver-specialized-source
     $<$<PLATFORM_ID:Linux>:--rtlib=compiler-rt>
     $<$<PLATFORM_ID:Linux>:--unwindlib=libgcc>
 )
@@ -513,6 +597,8 @@ else()
   list(APPEND static_depends PACKAGE fmt)
   target_link_libraries(rocsolver PRIVATE fmt::fmt)
 endif()
+
+target_precompile_headers(rocsolver PRIVATE <fmt/format.h> <fmt/ostream.h> <fmt/ranges.h> <fmt/core.h>)
 
 # In ROCm 4.0 and earlier, the default maximum threads per block is 256
 if(USE_HIPCXX)

@@ -677,3 +677,15 @@ INSTANTIATE(EXTERN_TESTING_GEBD2_GEBRD,
             FOREACH_BLOCKED_VARIANT,
             FOREACH_SCALAR_TYPE,
             APPLY_STAMP)
+
+// template<typename... Ts>
+// auto instantiate() {
+//     static auto funcs = std::tuple_cat(std::make_tuple(
+//         add<Ts>,
+//         square<Ts>
+//     )...);
+
+//     return &funcs;
+// }
+
+// template auto instantiate<int, double>();
