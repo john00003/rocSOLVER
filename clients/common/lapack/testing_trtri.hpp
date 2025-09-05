@@ -119,7 +119,7 @@ void testing_trtri_bad_arg()
     }
 }
 
-template <bool CPU, bool GPU, typename T, typename Td, typename Th, typename I>
+template <bool CPU, bool GPU, typename T, typename I, typename Td, typename Th>
 void trtri_initData(const rocblas_handle handle,
                     const I n,
                     Td& dA,
@@ -173,7 +173,7 @@ void trtri_initData(const rocblas_handle handle,
     }
 }
 
-template <bool STRIDED, typename T, typename Td, typename Ud, typename Th, typename Uh, typename I>
+template <bool STRIDED, typename T, typename I, typename Td, typename Ud, typename Th, typename Uh, typename Ih>
 void trtri_getError(const rocblas_handle handle,
                     const rocblas_fill uplo,
                     const rocblas_diagonal diag,
@@ -186,7 +186,7 @@ void trtri_getError(const rocblas_handle handle,
                     Th& hA,
                     Th& hARes,
                     Uh& hInfo,
-                    Uh& hInfoRes,
+                    Ih& hInfoRes,
                     double* max_err,
                     const bool singular)
 {
@@ -232,7 +232,7 @@ void trtri_getError(const rocblas_handle handle,
     }
 }
 
-template <bool STRIDED, typename T, typename Td, typename Ud, typename Th, typename Uh, typename I>
+template <bool STRIDED, typename T, typename I, typename Td, typename Ud, typename Th, typename Uh>
 void trtri_getPerfData(const rocblas_handle handle,
                        const rocblas_fill uplo,
                        const rocblas_diagonal diag,
@@ -385,7 +385,7 @@ void testing_trtri(Arguments& argus)
         // memory allocations
         host_batch_vector<T> hA(size_A, 1, bc);
         host_batch_vector<T> hARes(size_ARes, 1, bc);
-        host_strided_batch_vector<I> hInfo(1, 1, 1, bc);
+        host_strided_batch_vector<rocblas_int> hInfo(1, 1, 1, bc);
         host_strided_batch_vector<I> hInfoRes(1, 1, 1, bc);
         device_batch_vector<T> dA(size_A, 1, bc);
         device_strided_batch_vector<I> dInfo(1, 1, 1, bc);
@@ -407,12 +407,12 @@ void testing_trtri(Arguments& argus)
 
         // check computations
         if(argus.unit_check || argus.norm_check)
-            trtri_getError<STRIDED, T>(handle, uplo, diag, n, dA, lda, stA, dInfo, bc, hA, hARes,
+            trtri_getError<STRIDED, T, I>(handle, uplo, diag, n, dA, lda, stA, dInfo, bc, hA, hARes,
                                        hInfo, hInfoRes, &max_error, argus.singular);
 
         // collect performance data
         if(argus.timing)
-            trtri_getPerfData<STRIDED, T>(handle, uplo, diag, n, dA, lda, stA, dInfo, bc, hA, hInfo,
+            trtri_getPerfData<STRIDED, T, I>(handle, uplo, diag, n, dA, lda, stA, dInfo, bc, hA, hInfo,
                                           &gpu_time_used, &cpu_time_used, hot_calls, argus.profile,
                                           argus.profile_kernels, argus.perf, argus.singular);
     }
@@ -422,7 +422,7 @@ void testing_trtri(Arguments& argus)
         // memory allocations
         host_strided_batch_vector<T> hA(size_A, 1, stA, bc);
         host_strided_batch_vector<T> hARes(size_ARes, 1, stARes, bc);
-        host_strided_batch_vector<I> hInfo(1, 1, 1, bc);
+        host_strided_batch_vector<rocblas_int> hInfo(1, 1, 1, bc);
         host_strided_batch_vector<I> hInfoRes(1, 1, 1, bc);
         device_strided_batch_vector<T> dA(size_A, 1, stA, bc);
         device_strided_batch_vector<I> dInfo(1, 1, 1, bc);
@@ -444,12 +444,12 @@ void testing_trtri(Arguments& argus)
 
         // check computations
         if(argus.unit_check || argus.norm_check)
-            trtri_getError<STRIDED, T>(handle, uplo, diag, n, dA, lda, stA, dInfo, bc, hA, hARes,
+            trtri_getError<STRIDED, T, I>(handle, uplo, diag, n, dA, lda, stA, dInfo, bc, hA, hARes,
                                        hInfo, hInfoRes, &max_error, argus.singular);
 
         // collect performance data
         if(argus.timing)
-            trtri_getPerfData<STRIDED, T>(handle, uplo, diag, n, dA, lda, stA, dInfo, bc, hA, hInfo,
+            trtri_getPerfData<STRIDED, T, I>(handle, uplo, diag, n, dA, lda, stA, dInfo, bc, hA, hInfo,
                                           &gpu_time_used, &cpu_time_used, hot_calls, argus.profile,
                                           argus.profile_kernels, argus.perf, argus.singular);
     }
@@ -508,4 +508,4 @@ void testing_trtri(Arguments& argus)
 
 #define EXTERN_TESTING_TRTRI(...) extern template void testing_trtri<__VA_ARGS__>(Arguments&);
 
-INSTANTIATE(EXTERN_TESTING_TRTRI, FOREACH_MATRIX_DATA_LAYOUT, FOREACH_SCALAR_TYPE, APPLY_STAMP)
+INSTANTIATE(EXTERN_TESTING_TRTRI, FOREACH_MATRIX_DATA_LAYOUT, FOREACH_SCALAR_TYPE, FOREACH_INT_TYPE, APPLY_STAMP)

@@ -33,7 +33,11 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 using namespace std;
 
-typedef std::tuple<vector<int>, printable_char> trtri_tuple;
+template <typename I>
+using trtri_tuple = std::tuple<vector<I>, printable_char>;
+
+// typedef std::tuple<vector<int>, printable_char> trtri_tuple;
+
 
 // each matrix_size_range vector is a {n, lda, singular/diag}
 // if singular = 0, then the used matrix for the tests is triangular unit
@@ -62,19 +66,37 @@ const vector<vector<int>> matrix_size_range = {
     {90, 100, 1},
     {100, 150, 0}};
 
+const vector<vector<int64_t>> matrix_size_range_64 = {
+    // quick return
+    {0, 1, 0},
+    // invalid
+    {-1, 1, 0},
+    {20, 5, 0},
+    // normal (valid) samples
+    {20, 32, 0},
+    {30, 30, 1},
+    {40, 60, 2},
+    {80, 80, 2},
+    {90, 100, 1},
+    {100, 150, 0}};
+
 // for daily_lapack tests
 const vector<vector<int>> large_matrix_size_range
     = {{192, 192, 1}, {500, 600, 2}, {640, 640, 0}, {1000, 1024, 1}, {1200, 1230, 2}};
 
-Arguments trtri_setup_arguments(trtri_tuple tup)
+const vector<vector<int64_t>> large_matrix_size_range_64
+    = {{192, 192, 1}, {500, 600, 2}, {640, 640, 0}, {1000, 1024, 1}, {1200, 1230, 2}};
+
+template <typename I>
+Arguments trtri_setup_arguments(trtri_tuple<I> tup)
 {
-    vector<int> matrix_size = std::get<0>(tup);
+    vector<I> matrix_size = std::get<0>(tup);
     char uplo = std::get<1>(tup);
 
     Arguments arg;
 
-    arg.set<rocblas_int>("n", matrix_size[0]);
-    arg.set<rocblas_int>("lda", matrix_size[1]);
+    arg.set<I>("n", matrix_size[0]);
+    arg.set<I>("lda", matrix_size[1]);
 
     arg.set<char>("uplo", uplo);
 
@@ -96,7 +118,7 @@ Arguments trtri_setup_arguments(trtri_tuple tup)
 }
 
 template <typename I>
-class TRTRI_BASE : public ::TestWithParam<trtri_tuple>
+class TRTRI_BASE : public ::TestWithParam<trtri_tuple<I>>
 {
 protected:
     void TearDown() override
@@ -107,9 +129,9 @@ protected:
     template <bool BATCHED, bool STRIDED, typename T>
     void run_tests()
     {
-        Arguments arg = trtri_setup_arguments(GetParam());
+        Arguments arg = trtri_setup_arguments(this->GetParam());
 
-        if(arg.peek<rocblas_int>("n") == 0 && arg.peek<char>("uplo") == 'L')
+        if(arg.peek<I>("n") == 0 && arg.peek<char>("uplo") == 'L')
             testing_trtri_bad_arg<BATCHED, STRIDED, T, I>();
 
         arg.batch_count = (BATCHED || STRIDED ? 3 : 1);
@@ -156,17 +178,17 @@ TEST_P(TRTRI_64, __float)
     run_tests<false, false, float>();
 }
 
-TEST_P(TRTRI_64, __float)
+TEST_P(TRTRI_64, __double)
 {
     run_tests<false, false, double>();
 }
 
-TEST_P(TRTRI_64, __float)
+TEST_P(TRTRI_64, __float_complex)
 {
     run_tests<false, false, rocblas_float_complex>();
 }
 
-TEST_P(TRTRI_64, __float)
+TEST_P(TRTRI_64, __double_complex)
 {
     run_tests<false, false, rocblas_double_complex>();
 }
@@ -193,6 +215,26 @@ TEST_P(TRTRI, batched__double_complex)
     run_tests<true, true, rocblas_double_complex>();
 }
 
+TEST_P(TRTRI_64, batched__float)
+{
+    run_tests<true, true, float>();
+}
+
+TEST_P(TRTRI_64, batched__double)
+{
+    run_tests<true, true, double>();
+}
+
+TEST_P(TRTRI_64, batched__float_complex)
+{
+    run_tests<true, true, rocblas_float_complex>();
+}
+
+TEST_P(TRTRI_64, batched__double_complex)
+{
+    run_tests<true, true, rocblas_double_complex>();
+}
+
 // strided_batched tests
 
 TEST_P(TRTRI, strided_batched__float)
@@ -215,10 +257,39 @@ TEST_P(TRTRI, strided_batched__double_complex)
     run_tests<false, true, rocblas_double_complex>();
 }
 
+TEST_P(TRTRI_64, strided_batched__float)
+{
+    run_tests<false, true, float>();
+}
+
+TEST_P(TRTRI_64, strided_batched__double)
+{
+    run_tests<false, true, double>();
+}
+
+TEST_P(TRTRI_64, strided_batched__float_complex)
+{
+    run_tests<false, true, rocblas_float_complex>();
+}
+
+TEST_P(TRTRI_64, strided_batched__double_complex)
+{
+    run_tests<false, true, rocblas_double_complex>();
+}
+
 INSTANTIATE_TEST_SUITE_P(daily_lapack,
                          TRTRI,
                          Combine(ValuesIn(large_matrix_size_range), ValuesIn(uplo_range)));
 
+INSTANTIATE_TEST_SUITE_P(daily_lapack,
+                         TRTRI_64,
+                         Combine(ValuesIn(large_matrix_size_range_64),
+                                 ValuesIn(uplo_range)));
+
 INSTANTIATE_TEST_SUITE_P(checkin_lapack,
                          TRTRI,
                          Combine(ValuesIn(matrix_size_range), ValuesIn(uplo_range)));
+
+INSTANTIATE_TEST_SUITE_P(checkin_lapack,
+                         TRTRI_64,
+                         Combine(ValuesIn(matrix_size_range_64), ValuesIn(uplo_range)));
