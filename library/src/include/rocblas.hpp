@@ -1,5 +1,5 @@
 /* **************************************************************************
- * Copyright (C) 2019-2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (C) 2019-2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1067,53 +1067,62 @@ rocblas_status rocblasCall_gemv(rocblas_handle handle,
 }
 
 // trmv
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocblasCall_trmv(rocblas_handle handle,
                                 rocblas_fill uplo,
                                 rocblas_operation transa,
                                 rocblas_diagonal diag,
-                                rocblas_int m,
+                                I m,
                                 const T* a,
                                 rocblas_stride offseta,
-                                rocblas_int lda,
+                                I lda,
                                 rocblas_stride stridea,
                                 T* x,
                                 rocblas_stride offsetx,
-                                rocblas_int incx,
+                                I incx,
                                 rocblas_stride stridex,
                                 T* w,
                                 rocblas_stride stridew,
-                                rocblas_int batch_count)
+                                I batch_count)
 {
     ROCBLAS_ENTER("trmv", "trans:", transa, "diag:", diag, "m:", m, "shiftA:", offseta, "lda:", lda,
                   "shiftX:", offsetx, "incx:", incx, "bc:", batch_count);
 
-    return rocblas_internal_trmv_template(handle, uplo, transa, diag, m, a, offseta, lda, stridea,
+    if constexpr(std::is_same<I, int64_t>::value)
+        return rocblas_internal_trmv_template_64(handle, uplo, transa, diag, m, a, offseta, lda, stridea,
+                                          x, offsetx, incx, stridex, w, stridew, batch_count);
+    else
+        return rocblas_internal_trmv_template(handle, uplo, transa, diag, m, a, offseta, lda, stridea,
                                           x, offsetx, incx, stridex, w, stridew, batch_count);
 }
 
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocblasCall_trmv(rocblas_handle handle,
                                 rocblas_fill uplo,
                                 rocblas_operation transa,
                                 rocblas_diagonal diag,
-                                rocblas_int m,
+                                I m,
                                 const T* const* a,
                                 rocblas_stride offseta,
-                                rocblas_int lda,
+                                I lda,
                                 rocblas_stride stridea,
                                 T* const* x,
                                 rocblas_stride offsetx,
-                                rocblas_int incx,
+                                I incx,
                                 rocblas_stride stridex,
                                 T* w,
                                 rocblas_stride stridew,
-                                rocblas_int batch_count)
+                                I batch_count)
 {
     ROCBLAS_ENTER("trmv", "trans:", transa, "diag:", diag, "m:", m, "shiftA:", offseta, "lda:", lda,
                   "shiftX:", offsetx, "incx:", incx, "bc:", batch_count);
 
-    return rocblas_internal_trmv_batched_template(handle, uplo, transa, diag, m, a, offseta, lda,
+    if constexpr(std::is_same<I, int64_t>::value)
+        return rocblas_internal_trmv_batched_template_64(handle, uplo, transa, diag, m, a, offseta, lda,
+                                                  stridea, x, offsetx, incx, stridex, w, stridew,
+                                                  batch_count);
+    else
+        return rocblas_internal_trmv_batched_template(handle, uplo, transa, diag, m, a, offseta, lda,
                                                   stridea, x, offsetx, incx, stridex, w, stridew,
                                                   batch_count);
 }
@@ -1495,25 +1504,25 @@ rocblas_status rocblasCall_gemm(rocblas_handle handle,
 }
 
 // trmm
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocblasCall_trmm(rocblas_handle handle,
                                 rocblas_side side,
                                 rocblas_fill uplo,
                                 rocblas_operation transA,
                                 rocblas_diagonal diag,
-                                rocblas_int m,
-                                rocblas_int n,
+                                I m,
+                                I n,
                                 const T* alpha,
                                 rocblas_stride stride_alpha,
                                 const T* A,
                                 rocblas_stride offsetA,
-                                rocblas_int lda,
+                                I lda,
                                 rocblas_stride strideA,
                                 T* B,
                                 rocblas_stride offsetB,
-                                rocblas_int ldb,
+                                I ldb,
                                 rocblas_stride strideB,
-                                rocblas_int batch_count,
+                                I batch_count,
                                 T** workArr = nullptr)
 {
     // TODO: How to get alpha for trace logging
@@ -1521,30 +1530,35 @@ rocblas_status rocblasCall_trmm(rocblas_handle handle,
                   "n:", n, "shiftA:", offsetA, "lda:", lda, "shiftB:", offsetB, "ldb:", ldb,
                   "bc:", batch_count);
 
-    return rocblas_internal_trmm_template(handle, side, uplo, transA, diag, m, n, alpha, stride_alpha,
+    if constexpr(std::is_same<I, int64_t>::value)
+        return rocblas_internal_trmm_template_64(handle, side, uplo, transA, diag, m, n, alpha, stride_alpha,
+                                          A, offsetA, lda, strideA, cast2constType<T>(B), offsetB,
+                                          ldb, strideB, B, offsetB, ldb, strideB, batch_count);
+    else
+        return rocblas_internal_trmm_template(handle, side, uplo, transA, diag, m, n, alpha, stride_alpha,
                                           A, offsetA, lda, strideA, cast2constType<T>(B), offsetB,
                                           ldb, strideB, B, offsetB, ldb, strideB, batch_count);
 }
 
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocblasCall_trmm(rocblas_handle handle,
                                 rocblas_side side,
                                 rocblas_fill uplo,
                                 rocblas_operation transA,
                                 rocblas_diagonal diag,
-                                rocblas_int m,
-                                rocblas_int n,
+                                I m,
+                                I n,
                                 const T* alpha,
                                 rocblas_stride stride_alpha,
                                 const T* const* A,
                                 rocblas_stride offsetA,
-                                rocblas_int lda,
+                                I lda,
                                 rocblas_stride strideA,
                                 T* const* B,
                                 rocblas_stride offsetB,
-                                rocblas_int ldb,
+                                I ldb,
                                 rocblas_stride strideB,
-                                rocblas_int batch_count,
+                                I batch_count,
                                 T** workArr = nullptr)
 {
     // TODO: How to get alpha for trace logging
@@ -1552,9 +1566,14 @@ rocblas_status rocblasCall_trmm(rocblas_handle handle,
                   "n:", n, "shiftA:", offsetA, "lda:", lda, "shiftB:", offsetB, "ldb:", ldb,
                   "bc:", batch_count);
 
-    return rocblas_internal_trmm_batched_template(
-        handle, side, uplo, transA, diag, m, n, alpha, stride_alpha, A, offsetA, lda, strideA,
-        cast2constType<T>(B), offsetB, ldb, strideB, B, offsetB, ldb, strideB, batch_count);
+    if constexpr(std::is_same<I, int64_t>::value)
+        return rocblas_internal_trmm_batched_template_64(
+            handle, side, uplo, transA, diag, m, n, alpha, stride_alpha, A, offsetA, lda, strideA,
+            cast2constType<T>(B), offsetB, ldb, strideB, B, offsetB, ldb, strideB, batch_count);
+    else
+        return rocblas_internal_trmm_batched_template(
+            handle, side, uplo, transA, diag, m, n, alpha, stride_alpha, A, offsetA, lda, strideA,
+            cast2constType<T>(B), offsetB, ldb, strideB, B, offsetB, ldb, strideB, batch_count);
 }
 
 // trmm overload

@@ -156,10 +156,10 @@ void rocsolver_trtri_getMemorySize(const rocblas_diagonal diag,
     w3a = nn * sizeof(T) * batch_count;
 #endif
 
-    if(blk == 0)
+    if (blk == 0 && !std::is_same<I, int64_t>::value)
     {
         // requirements for calling rocBLAS TRTRI
-        rocblasCall_trtri_mem<BATCHED, T, I>(n, batch_count, size_work1, size_work2);
+        rocblasCall_trtri_mem<BATCHED, T>(n, batch_count, size_work1, size_work2);
         *size_work3 = 0;
         *size_work4 = 0;
         *optim_mem = true;
@@ -251,7 +251,7 @@ void trti2(rocblas_handle handle,
 
     // inverse of the diagonal (reciprocals)
     I blocks = (n - 1) / 32 + 1;
-    ROCSOLVER_LAUNCH_KERNEL(invdiag<T>, dim3(blocks, batch_count), dim3(32, 1), 0, stream, diag, n,
+    ROCSOLVER_LAUNCH_KERNEL((invdiag<T, U, I>), dim3(blocks, batch_count), dim3(32, 1), 0, stream, diag, n,
                             A, shiftA, lda, strideA, alphas);
 
     if(uplo == rocblas_fill_upper)
@@ -335,7 +335,7 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
     // check for singularities if non-unit diagonal
     if(diag == rocblas_diagonal_non_unit)
     {
-        ROCSOLVER_LAUNCH_KERNEL(check_singularity<T>, dim3(batch_count, 1, 1), dim3(1, 64, 1), 0,
+        ROCSOLVER_LAUNCH_KERNEL((check_singularity<T, U, I>), dim3(batch_count, 1, 1), dim3(1, 64, 1), 0,
                                 stream, n, A, shiftA, lda, strideA, info);
     }
 
@@ -351,7 +351,7 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
                                 info_mask(info));
     }
 
-    if(blk == 0)
+    if(blk == 0 && !std::is_same<I, int64_t>::value)
     {
         // simply use rocblas_trtri
         rocblasCall_trtri(handle, uplo, diag, n, A, shiftA, lda, strideA, tmpcopy, 0, ldw, strideW,
@@ -360,7 +360,7 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
         // copy result to A if info is zero
         ROCSOLVER_LAUNCH_KERNEL((copy_mat<T>), dim3(blocks, blocks, batch_count), dim3(32, 32), 0,
                                 stream, copymat_from_buffer, n, n, A, shiftA, lda, strideA, tmpcopy,
-                                info_mask(info, info_mask::negate), uplo, diag);
+                                info_mask(info, info_mask<I>::negate), uplo, diag);
     }
 
     else if(blk == 1)
@@ -379,11 +379,11 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
                 jb = std::min(n - j, blk);
 
                 // update current block column
-                rocblasCall_trmm(handle, rocblas_side_left, uplo, rocblas_operation_none, diag, j,
+                rocblasCall_trmm<T, I>(handle, rocblas_side_left, uplo, rocblas_operation_none, diag, j,
                                  jb, &one, 0, A, shiftA, lda, strideA, A, shiftA + idx2D(0, j, lda),
                                  lda, strideA, batch_count);
 
-                rocblasCall_trsm(handle, rocblas_side_right, uplo, rocblas_operation_none, diag, j,
+                rocblasCall_trsm<T, I>(handle, rocblas_side_right, uplo, rocblas_operation_none, diag, j,
                                  jb, &minone, A, shiftA + idx2D(j, j, lda), lda, strideA, A,
                                  shiftA + idx2D(0, j, lda), lda, strideA, batch_count, optim_mem,
                                  work1, work2, work3, work4);
@@ -400,12 +400,12 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
                 jb = std::min(n - j, blk);
 
                 // update current block column
-                rocblasCall_trmm(handle, rocblas_side_left, uplo, rocblas_operation_none, diag,
+                rocblasCall_trmm<T, I>(handle, rocblas_side_left, uplo, rocblas_operation_none, diag,
                                  n - j - jb, jb, &one, 0, A, shiftA + idx2D(j + jb, j + jb, lda),
                                  lda, strideA, A, shiftA + idx2D(j + jb, j, lda), lda, strideA,
                                  batch_count);
 
-                rocblasCall_trsm(handle, rocblas_side_right, uplo, rocblas_operation_none, diag,
+                rocblasCall_trsm<T, I>(handle, rocblas_side_right, uplo, rocblas_operation_none, diag,
                                  n - j - jb, jb, &minone, A, shiftA + idx2D(j, j, lda), lda,
                                  strideA, A, shiftA + idx2D(j + jb, j, lda), lda, strideA,
                                  batch_count, optim_mem, work1, work2, work3, work4);

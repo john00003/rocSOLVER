@@ -621,6 +621,7 @@ struct no_mask
 /** An mask defined by an integer array (e.g., the info array). By default, a non-zero value for the ith integer
     indicates that the data for batch i should be copied over. Data will not be copied if the mask value is zero.
     This behaviour is reversed if the negate transform is passed to the constructor. **/
+template<typename I>
 struct info_mask
 {
     enum mask_transform
@@ -629,18 +630,18 @@ struct info_mask
         negate
     };
 
-    explicit constexpr info_mask(rocblas_int* mask, mask_transform transform = none) noexcept
+    explicit constexpr info_mask(I* mask, mask_transform transform = none) noexcept
         : m_mask(mask)
         , m_negate(transform == negate)
     {
     }
 
-    __device__ constexpr bool operator[](rocblas_int idx) const noexcept
+    __device__ constexpr bool operator[](I idx) const noexcept
     {
         return m_negate ^ !!m_mask[idx];
     }
 
-    rocblas_int* m_mask;
+    I* m_mask;
     bool m_negate;
 };
 
@@ -1232,13 +1233,13 @@ ROCSOLVER_KERNEL void scale_axpy(const rocblas_int n,
     }
 }
 
-template <typename T, typename U>
-ROCSOLVER_KERNEL void check_singularity(const rocblas_int n,
+template <typename T, typename U, typename I>
+ROCSOLVER_KERNEL void check_singularity(const I n,
                                         U A,
-                                        const rocblas_int shiftA,
-                                        const rocblas_int lda,
+                                        const I shiftA,
+                                        const I lda,
                                         const rocblas_stride strideA,
-                                        rocblas_int* info)
+                                        I* info)
 {
     // Checks for singularities in the matrix and updates info to indicate where
     // the first singularity (if any) occurs
@@ -1264,7 +1265,7 @@ ROCSOLVER_KERNEL void check_singularity(const rocblas_int n,
     __syncthreads();
 
     if(hipThreadIdx_y == 0)
-        info[b] = _info;
+        info[b] = static_cast<I>(_info);
 }
 
 /** SWAP swaps the values of vectors x and y of dimension n.

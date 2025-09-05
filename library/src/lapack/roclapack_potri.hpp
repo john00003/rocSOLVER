@@ -166,7 +166,7 @@ rocblas_status rocsolver_potri_template(rocblas_handle handle,
     // copy elements of tmpcopy into A in cases where info is zero
     ROCSOLVER_LAUNCH_KERNEL(copy_mat<T>, dim3(copyblocks, copyblocks, batch_count), dim3(32, 32), 0,
                             stream, copymat_from_buffer, n, n, A, shiftA, lda, strideA, tmpcopy,
-                            info_mask(info, info_mask::negate), uplo, rocblas_diagonal_non_unit);
+                            info_mask(info, info_mask<rocblas_int>::negate), uplo, rocblas_diagonal_non_unit);
 
     rocblas_set_pointer_mode(handle, old_mode);
     return rocblas_status_success;
