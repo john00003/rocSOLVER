@@ -2428,8 +2428,8 @@ rocblas_status rocblasCall_trsm(rocblas_handle handle,
 }
 
 // trtri memory sizes
-template <bool BATCHED, typename T>
-void rocblasCall_trtri_mem(rocblas_int n, rocblas_int batch_count, size_t* c_temp, size_t* c_temp_arr)
+template <bool BATCHED, typename T, typename I>
+void rocblasCall_trtri_mem(I n, I batch_count, size_t* c_temp, size_t* c_temp_arr)
 {
     size_t c_temp_els = rocblas_internal_trtri_temp_elements(n, batch_count);
     *c_temp = c_temp_els * sizeof(T);
@@ -2438,20 +2438,20 @@ void rocblasCall_trtri_mem(rocblas_int n, rocblas_int batch_count, size_t* c_tem
 }
 
 // trtri
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocblasCall_trtri(rocblas_handle handle,
                                  rocblas_fill uplo,
                                  rocblas_diagonal diag,
-                                 rocblas_int n,
+                                 I n,
                                  const T* A,
                                  rocblas_stride offset_A,
-                                 rocblas_int lda,
+                                 I lda,
                                  rocblas_stride stride_A,
                                  T* invA,
                                  rocblas_stride offset_invA,
-                                 rocblas_int ldinvA,
+                                 I ldinvA,
                                  rocblas_stride stride_invA,
-                                 rocblas_int batch_count,
+                                 I batch_count,
                                  T* c_temp,
                                  T** c_temp_arr,
                                  T** workArr)
@@ -2465,20 +2465,20 @@ rocblas_status rocblasCall_trtri(rocblas_handle handle,
 }
 
 // batched trtri
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocblasCall_trtri(rocblas_handle handle,
                                  rocblas_fill uplo,
                                  rocblas_diagonal diag,
-                                 rocblas_int n,
+                                 I n,
                                  const T* const* A,
                                  rocblas_stride offset_A,
-                                 rocblas_int lda,
+                                 I lda,
                                  rocblas_stride stride_A,
                                  T* const* invA,
                                  rocblas_stride offset_invA,
-                                 rocblas_int ldinvA,
+                                 I ldinvA,
                                  rocblas_stride stride_invA,
-                                 rocblas_int batch_count,
+                                 I batch_count,
                                  T* const* c_temp,
                                  T** c_temp_arr,
                                  T** workArr)
@@ -2492,20 +2492,20 @@ rocblas_status rocblasCall_trtri(rocblas_handle handle,
 }
 
 // trtri overload
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocblasCall_trtri(rocblas_handle handle,
                                  rocblas_fill uplo,
                                  rocblas_diagonal diag,
-                                 rocblas_int n,
+                                 I n,
                                  const T* const A[],
                                  rocblas_stride offset_A,
-                                 rocblas_int lda,
+                                 I lda,
                                  rocblas_stride stride_A,
                                  T* const invA[],
                                  rocblas_stride offset_invA,
-                                 rocblas_int ldinvA,
+                                 I ldinvA,
                                  rocblas_stride stride_invA,
-                                 rocblas_int batch_count,
+                                 I batch_count,
                                  T* c_temp,
                                  T** c_temp_arr,
                                  T** workArr)
@@ -2528,20 +2528,20 @@ rocblas_status rocblasCall_trtri(rocblas_handle handle,
 }
 
 // trtri overload
-template <typename T>
+template <typename T, typename I>
 rocblas_status rocblasCall_trtri(rocblas_handle handle,
                                  rocblas_fill uplo,
                                  rocblas_diagonal diag,
-                                 rocblas_int n,
+                                 I n,
                                  const T* const A[],
                                  rocblas_stride offset_A,
-                                 rocblas_int lda,
+                                 I lda,
                                  rocblas_stride stride_A,
                                  T* invA,
                                  rocblas_stride offset_invA,
-                                 rocblas_int ldinvA,
+                                 I ldinvA,
                                  rocblas_stride stride_invA,
-                                 rocblas_int batch_count,
+                                 I batch_count,
                                  T* c_temp,
                                  T** c_temp_arr,
                                  T** workArr)

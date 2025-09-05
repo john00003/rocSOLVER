@@ -33,7 +33,12 @@ ROCSOLVER_BEGIN_NAMESPACE
     Instantiate template methods using macros
 *************************************************************/
 
-INSTANTIATE_TRTI2_SMALL(float, float*);
-INSTANTIATE_TRTI2_SMALL(float, float* const*);
+INSTANTIATE_TRTI2_SMALL(float, float*, rocblas_int);
+INSTANTIATE_TRTI2_SMALL(float, float* const*, rocblas_int);
+
+#ifdef HAVE_ROCBLAS_64
+INSTANTIATE_TRTI2_SMALL(float, float*, int64_t);
+INSTANTIATE_TRTI2_SMALL(float, float* const*, int64_t);
+#endif
 
 ROCSOLVER_END_NAMESPACE

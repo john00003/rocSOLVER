@@ -29,7 +29,7 @@
 
 ROCSOLVER_BEGIN_NAMESPACE
 
-template <typename T, typename U, template I>
+template <typename T, typename U, typename I>
 rocblas_status rocsolver_trtri_batched_impl(rocblas_handle handle,
                                             const rocblas_fill uplo,
                                             const rocblas_diagonal diag,

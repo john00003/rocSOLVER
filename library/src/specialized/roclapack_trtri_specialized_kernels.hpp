@@ -43,13 +43,13 @@ ROCSOLVER_BEGIN_NAMESPACE
     the library size.
 *************************************************************/
 
-template <rocblas_int DIM, typename T, typename U>
+template <rocblas_int DIM, typename T, typename U, typename I>
 ROCSOLVER_KERNEL void __launch_bounds__(TRTRI_MAX_COLS)
     trti2_kernel_small(const rocblas_fill uplo,
                        const rocblas_diagonal diagtype,
                        U AA,
-                       const rocblas_int shiftA,
-                       const rocblas_int lda,
+                       const I shiftA,
+                       const I lda,
                        const rocblas_stride strideA)
 {
     int b = hipBlockIdx_x;
@@ -136,19 +136,19 @@ ROCSOLVER_KERNEL void __launch_bounds__(TRTRI_MAX_COLS)
     Launchers of specilized  kernels
 *************************************************************/
 
-template <typename T, typename U>
+template <typename T, typename U, typename I>
 void trti2_run_small(rocblas_handle handle,
                      const rocblas_fill uplo,
                      const rocblas_diagonal diag,
-                     const rocblas_int n,
+                     const I n,
                      U A,
-                     const rocblas_int shiftA,
-                     const rocblas_int lda,
+                     const I shiftA,
+                     const I lda,
                      const rocblas_stride strideA,
-                     const rocblas_int batch_count)
+                     const I batch_count)
 {
 #define RUN_TRTI2_SMALL(DIM)                                                                     \
-    ROCSOLVER_LAUNCH_KERNEL((trti2_kernel_small<DIM, T>), grid, block, 0, stream, uplo, diag, A, \
+    ROCSOLVER_LAUNCH_KERNEL((trti2_kernel_small<DIM, T, U, I>), grid, block, 0, stream, uplo, diag, A, \
                             shiftA, lda, strideA)
 
     dim3 grid(batch_count, 1, 1);
@@ -233,10 +233,10 @@ void trti2_run_small(rocblas_handle handle,
     Instantiation macros
 *************************************************************/
 
-#define INSTANTIATE_TRTI2_SMALL(T, U)                                                          \
-    template void trti2_run_small<T, U>(rocblas_handle handle, const rocblas_fill uplo,        \
-                                        const rocblas_diagonal diag, const rocblas_int n, U A, \
-                                        const rocblas_int shiftA, const rocblas_int lda,       \
-                                        const rocblas_stride strideA, const rocblas_int batch_count)
+#define INSTANTIATE_TRTI2_SMALL(T, U, I)                                                       \
+    template void trti2_run_small<T, U, I>(rocblas_handle handle, const rocblas_fill uplo,     \
+                                           const rocblas_diagonal diag, const I n, U A,        \
+                                           const I shiftA, const I lda,                        \
+                                           const rocblas_stride strideA, const I batch_count)
 
 ROCSOLVER_END_NAMESPACE

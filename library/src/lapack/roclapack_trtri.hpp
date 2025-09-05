@@ -159,7 +159,7 @@ void rocsolver_trtri_getMemorySize(const rocblas_diagonal diag,
     if(blk == 0)
     {
         // requirements for calling rocBLAS TRTRI
-        rocblasCall_trtri_mem<BATCHED, T>(n, batch_count, size_work1, size_work2);
+        rocblasCall_trtri_mem<BATCHED, T, I>(n, batch_count, size_work1, size_work2);
         *size_work3 = 0;
         *size_work4 = 0;
         *optim_mem = true;
@@ -175,7 +175,7 @@ void rocsolver_trtri_getMemorySize(const rocblas_diagonal diag,
     else
     {
         I nn = (n % 128 != 0) ? n : n + 1;
-        rocblasCall_trsm_mem<BATCHED, T>(rocblas_side_right, rocblas_operation_none, nn, blk, 1, 1,
+        rocblasCall_trsm_mem<BATCHED, T, I>(rocblas_side_right, rocblas_operation_none, nn, blk, 1, 1,
                                          batch_count, &w1b, size_work2, &w3b, size_work4);
         *size_work1 = std::max(w1a, w1b);
         *size_work3 = std::max(w3a, w3b);
@@ -235,7 +235,7 @@ void trti2(rocblas_handle handle,
     // if very small size, use optimized kernel
     if(n <= TRTRI_MAX_COLS)
     {
-        trti2_run_small<T>(handle, uplo, diag, n, A, shiftA, lda, strideA, batch_count);
+        trti2_run_small<T, U, I>(handle, uplo, diag, n, A, shiftA, lda, strideA, batch_count);
         return;
     }
 #endif
@@ -258,11 +258,11 @@ void trti2(rocblas_handle handle,
     {
         for(I j = 1; j < n; ++j)
         {
-            rocblasCall_trmv<T>(handle, uplo, rocblas_operation_none, diag, j, A, shiftA, lda,
+            rocblasCall_trmv<T, I>(handle, uplo, rocblas_operation_none, diag, j, A, shiftA, lda,
                                 strideA, A, shiftA + idx2D(0, j, lda), 1, strideA, work, stdw,
                                 batch_count);
 
-            rocblasCall_scal<T>(handle, j, alphas + j, stdw, A, shiftA + idx2D(0, j, lda), 1,
+            rocblasCall_scal<T, I>(handle, j, alphas + j, stdw, A, shiftA + idx2D(0, j, lda), 1,
                                 strideA, batch_count);
         }
     }
@@ -270,11 +270,11 @@ void trti2(rocblas_handle handle,
     {
         for(I j = n - 2; j >= 0; --j)
         {
-            rocblasCall_trmv<T>(handle, uplo, rocblas_operation_none, diag, n - j - 1, A,
+            rocblasCall_trmv<T, I>(handle, uplo, rocblas_operation_none, diag, n - j - 1, A,
                                 shiftA + idx2D(j + 1, j + 1, lda), lda, strideA, A,
                                 shiftA + idx2D(j + 1, j, lda), 1, strideA, work, stdw, batch_count);
 
-            rocblasCall_scal<T>(handle, n - j - 1, alphas + j, stdw, A,
+            rocblasCall_scal<T, I>(handle, n - j - 1, alphas + j, stdw, A,
                                 shiftA + idx2D(j + 1, j, lda), 1, strideA, batch_count);
         }
     }
@@ -366,7 +366,7 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
     else if(blk == 1)
     {
         // use the unblocked algorithm
-        trti2<T>(handle, uplo, diag, n, A, shiftA, lda, strideA, batch_count, (T*)work1, (T*)work3);
+        trti2<T, U, I>(handle, uplo, diag, n, A, shiftA, lda, strideA, batch_count, (T*)work1, (T*)work3);
     }
 
     else
@@ -388,8 +388,8 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
                                  shiftA + idx2D(0, j, lda), lda, strideA, batch_count, optim_mem,
                                  work1, work2, work3, work4);
 
-                trti2<T>(handle, uplo, diag, jb, A, shiftA + idx2D(j, j, lda), lda, strideA,
-                         batch_count, (T*)work1, (T*)work3);
+                trti2<T, U, I>(handle, uplo, diag, jb, A, shiftA + idx2D(j, j, lda), lda, strideA,
+                               batch_count, (T*)work1, (T*)work3);
             }
         }
         else // rocblas_fill_lower
@@ -411,8 +411,8 @@ rocblas_status rocsolver_trtri_template(rocblas_handle handle,
                                  batch_count, optim_mem, work1, work2, work3, work4);
 
                 // inverse of current diagonal block
-                trti2<T>(handle, uplo, diag, jb, A, shiftA + idx2D(j, j, lda), lda, strideA,
-                         batch_count, (T*)work1, (T*)work3);
+                trti2<T, U, I>(handle, uplo, diag, jb, A, shiftA + idx2D(j, j, lda), lda, strideA,
+                               batch_count, (T*)work1, (T*)work3);
             }
         }
     }
